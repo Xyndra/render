@@ -1,9 +1,10 @@
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum RenderMode {
     HighPerformance,
     LowPower,
 }
 
+#[derive(Clone)]
 pub struct WindowOptions {
     pub title: String,
     pub default_width: u32,
