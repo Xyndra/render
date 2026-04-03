@@ -7,8 +7,8 @@ edition = "2024"
 path = "render/lib.rs"
 
 [dependencies]
-render_layout = { path = "crates/render_layout" }
 render_components = { path = "crates/render_components" }
+render_platform_options = { path = "crates/render_platform_options" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 render_linux = { path = "crates/render_linux" }
@@ -18,6 +18,7 @@ members = [
     "crates/render_layout",
     "crates/render_linux",
     "crates/render_components",
+    "crates/render_platform_options",
 ]
 
 [[example]]

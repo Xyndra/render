@@ -26,4 +26,4 @@ Goals of the project:
     - Possibility of generating manual JavaScript for the web
 - For native, generate shapes and then use a harfbuzz binding and a high-performance SVG rendering engine
 
-If this project succeeds, I will also create a standard library for things like save storage, networking, and other things that JS has an easy version for to simplify the development further.
+If this project succeeds, I will also create a standard library for things like save storage, networking, navigation, and other things that JS has an easy version for to simplify the development further.

@@ -934,12 +934,20 @@ name = "render"
 version = "0.1.0"
 dependencies = [
  "render_components",
- "render_layout",
  "render_linux",
+ "render_platform_options",
 ]
 
 [[package]]
 name = "render_components"
+version = "0.1.0"
+dependencies = [
+ "render_events",
+ "render_layout",
+]
+
+[[package]]
+name = "render_events"
 version = "0.1.0"
 
 [[package]]
@@ -951,9 +959,15 @@ name = "render_linux"
 version = "0.1.0"
 dependencies = [
  "render_components",
+ "render_events",
  "render_layout",
+ "render_platform_options",
  "winit",
 ]
+
+[[package]]
+name = "render_platform_options"
+version = "0.1.0"
 
 [[package]]
 name = "rustc_version"

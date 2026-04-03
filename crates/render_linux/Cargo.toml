@@ -10,3 +10,5 @@ path = "lib.rs"
 winit = "0.30.13"
 render_layout = { path = "../render_layout" }
 render_components = { path = "../render_components" }
+render_platform_options = { path = "../render_platform_options" }
+render_events = { path = "../render_events" }

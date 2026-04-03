@@ -1,6 +1,6 @@
-use render::run;
+use render::run_default;
 use render_components::empty_component::EmptyComponent;
 
 fn main() {
-    run(EmptyComponent {});
+    run_default(EmptyComponent {});
 }

@@ -1,4 +1,5 @@
-use crate::{Events, RenderComponent, Shapes};
+use crate::{RenderComponent, Shapes};
+use render_events::Events;
 
 pub struct EmptyComponent;
 impl RenderComponent for EmptyComponent {

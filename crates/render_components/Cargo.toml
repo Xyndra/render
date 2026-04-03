@@ -5,3 +5,7 @@ edition = "2024"
 
 [lib]
 path = "lib.rs"
+
+[dependencies]
+render_layout = { path = "../render_layout" }
+render_events = { path = "../render_events" }

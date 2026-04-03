@@ -1,5 +1,8 @@
+use render_events::Events;
+
 pub mod empty_component;
 
+#[derive(Debug)]
 pub enum Shapes {
     Rectangle {
         width: u32,
@@ -11,12 +14,6 @@ pub enum Shapes {
         width: u32,
         height: u32,
     },
-}
-
-pub enum Events {
-    MouseMove { x: i32, y: i32 },
-    MouseClick { x: i32, y: i32 },
-    KeyPress { key: char },
 }
 
 pub trait RenderComponent {
