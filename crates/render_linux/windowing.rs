@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use render_components::RenderComponent;
 use render_events::{ClickDevice, Events};
 use render_platform_options::{RenderMode, WindowOptions};
@@ -11,7 +13,7 @@ use crate::renderer::Renderer;
 
 #[derive(Default)]
 struct App {
-    window: Option<Box<Window>>,
+    window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
     base_component: Option<Box<dyn RenderComponent>>,
     window_options: WindowOptions,
@@ -28,16 +30,14 @@ impl ApplicationHandler for App {
         let window = event_loop
             .create_window(attributes)
             .expect("Could not create window");
-        let window = Box::new(window);
-        // Create a raw pointer to avoid move issues
-        let window_ptr: *const Window = &*window;
-        self.window = Some(window);
+        self.window = Some(Arc::new(window));
         let size = self.window.as_ref().unwrap().inner_size();
         self.renderer = Some(Renderer::setup(
-            window_ptr,
+            self.window.as_ref().unwrap().as_ref(),
             size,
             self.window_options.clone(),
         ));
+        self.renderer.as_mut().unwrap().window = self.window.clone();
         self.base_component
             .as_mut()
             .unwrap()

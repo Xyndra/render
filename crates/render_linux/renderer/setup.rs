@@ -34,25 +34,15 @@ impl Renderer {
             ..Default::default()
         }))
         .expect("Failed to create device");
-        surface.configure(
-            &device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface.get_capabilities(&adapter).formats[0],
-                width: size.width,
-                height: size.height,
-                present_mode: wgpu::PresentMode::Fifo,
-                desired_maximum_frame_latency: 2,
-                alpha_mode: wgpu::CompositeAlphaMode::Auto,
-                view_formats: vec![], // danger! do not know!
-            },
-        );
-        Self {
+        let mut renderer = Self {
             instance: Some(instance),
             surface: Some(surface),
             adapter: Some(adapter),
             device: Some(device),
             queue: Some(queue),
-        }
+            window: None,
+        };
+        renderer.reconfigure(size.width, size.height);
+        return renderer;
     }
 }

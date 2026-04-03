@@ -6,9 +6,34 @@ impl Renderer {
         let output = self.surface.as_ref().unwrap().get_current_texture();
         #[allow(unused_assignments)]
         let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
+        #[allow(unused_assignments)]
+        let mut should_reconfigure = false;
         match output {
             CurrentSurfaceTexture::Success(texture) => {
                 surface_texture = Some(texture);
+            }
+            CurrentSurfaceTexture::Suboptimal(texture) => {
+                eprintln!("Surface is suboptimal, but acquired texture");
+                surface_texture = Some(texture);
+                should_reconfigure = true;
+            }
+            CurrentSurfaceTexture::Timeout => {
+                eprintln!("Timeout while acquiring texture, skipping frame");
+                return;
+            }
+            CurrentSurfaceTexture::Occluded => {
+                #[cfg(debug_assertions)]
+                eprintln!("Window is occluded, skipping frame");
+                return;
+            }
+            CurrentSurfaceTexture::Outdated => {
+                #[cfg(debug_assertions)]
+                eprintln!("Surface is outdated, reconfiguring and skipping frame");
+                self.reconfigure(
+                    self.window.as_ref().unwrap().inner_size().width,
+                    self.window.as_ref().unwrap().inner_size().height,
+                );
+                return;
             }
             _ => {
                 // todo! handle all the other cases
@@ -54,6 +79,13 @@ impl Renderer {
             .as_ref()
             .unwrap()
             .submit(std::iter::once(encoder.finish()));
+        // todo! do something
         surface_texture.unwrap().present();
+        if should_reconfigure {
+            self.reconfigure(
+                self.window.as_ref().unwrap().inner_size().width,
+                self.window.as_ref().unwrap().inner_size().height,
+            );
+        }
     }
 }
