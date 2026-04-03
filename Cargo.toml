@@ -3,4 +3,23 @@ name = "render"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+path = "render/lib.rs"
+
 [dependencies]
+render_layout = { path = "crates/render_layout" }
+render_components = { path = "crates/render_components" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+render_linux = { path = "crates/render_linux" }
+
+[workspace]
+members = [
+    "crates/render_layout",
+    "crates/render_linux",
+    "crates/render_components",
+]
+
+[[example]]
+name = "empty_window"
+path = "examples/empty_window.rs"

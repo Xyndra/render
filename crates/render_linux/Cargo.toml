@@ -1,0 +1,12 @@
+[package]
+name = "render_linux"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+winit = "0.30.13"
+render_layout = { path = "../render_layout" }
+render_components = { path = "../render_components" }
