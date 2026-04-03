@@ -8,6 +8,8 @@ flowchart TD
     main <--> Platforms
     subgraph Platforms
         linux["render linux"] <--> winit
+        linux <--> wgpu
+        wgpu <--> winit
     end
     Platforms <--> events
     Platforms <--> layout

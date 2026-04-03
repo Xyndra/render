@@ -8,6 +8,9 @@ path = "lib.rs"
 
 [dependencies]
 winit = "0.30.13"
+wgpu = "29.0.1"
+env_logger = "0.11.10"
+pollster = "0.4.0"
 render_layout = { path = "../render_layout" }
 render_components = { path = "../render_components" }
 render_platform_options = { path = "../render_platform_options" }
