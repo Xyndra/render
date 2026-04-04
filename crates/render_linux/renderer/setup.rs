@@ -34,12 +34,19 @@ impl Renderer {
             ..Default::default()
         }))
         .expect("Failed to create device");
+        let clear_color = wgpu::Color {
+            r: window_options.clear_color.0 as f64 / 255.0,
+            g: window_options.clear_color.1 as f64 / 255.0,
+            b: window_options.clear_color.2 as f64 / 255.0,
+            a: 1.0,
+        };
         let mut renderer = Self {
             instance: Some(instance),
             surface: Some(surface),
             adapter: Some(adapter),
             device: Some(device),
             queue: Some(queue),
+            clear_color,
             window: None,
         };
         renderer.reconfigure(size.width, size.height);

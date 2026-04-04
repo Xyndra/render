@@ -1,5 +1,5 @@
 use crate::renderer::Renderer;
-use wgpu::CurrentSurfaceTexture;
+use wgpu::{CurrentSurfaceTexture, LoadOp, StoreOp};
 
 impl Renderer {
     pub(crate) fn clear(&mut self) {
@@ -62,13 +62,8 @@ impl Renderer {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
+                        load: LoadOp::Clear(self.clear_color),
+                        store: StoreOp::Store,
                     },
                     depth_slice: None,
                 })],
@@ -79,7 +74,8 @@ impl Renderer {
             .as_ref()
             .unwrap()
             .submit(std::iter::once(encoder.finish()));
-        // todo! do something
+        // todo! actually render something instead of just clearing
+        self.window.as_ref().unwrap().pre_present_notify();
         surface_texture.unwrap().present();
         if should_reconfigure {
             self.reconfigure(

@@ -1,6 +1,7 @@
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Default)]
 pub enum RenderMode {
     HighPerformance,
+    #[default]
     LowPower,
 }
 
@@ -10,6 +11,7 @@ pub struct WindowOptions {
     pub default_width: u32,
     pub default_height: u32,
     pub render_mode: RenderMode,
+    pub clear_color: (u8, u8, u8),
 }
 
 impl Default for WindowOptions {
@@ -19,6 +21,7 @@ impl Default for WindowOptions {
             default_width: 800,
             default_height: 600,
             render_mode: RenderMode::LowPower,
+            clear_color: (200, 255, 200),
         }
     }
 }

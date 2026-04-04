@@ -1,18 +1,36 @@
 use crate::{RenderComponent, Shapes};
 use render_events::Events;
+use render_layout::{Sizing, SizingType};
 
-pub struct EmptyComponent;
+#[derive(Default)]
+pub struct EmptyComponent {
+    width: u32,
+    height: u32,
+}
 impl RenderComponent for EmptyComponent {
-    fn render_html(&self, slot: &str) -> String {
-        format!(r#"<div>{}</div>"#, slot)
+    fn get_sizing(&'_ self) -> Sizing<'_> {
+        Sizing::new(SizingType::Grow(1), SizingType::Grow(1))
     }
 
-    fn render_native(&self) -> Shapes {
-        Shapes::Rectangle {
-            width: 0,
-            height: 0,
+    fn render(&'_ self) -> Vec<Shapes<'_>> {
+        vec![Shapes::Rectangle {
+            sizing: Sizing::new(SizingType::Grow(1), SizingType::Grow(1)),
+            color: (255, 255, 0),
+            rounding: None,
+        }]
+    }
+
+    fn children(&'_ self) -> Vec<Box<dyn RenderComponent>> {
+        vec![]
+    }
+
+    fn handle_event(&mut self, event: Events) {
+        match event {
+            Events::Resize { width, height } => {
+                self.width = width;
+                self.height = height;
+            }
+            _ => {}
         }
     }
-
-    fn handle_event(&mut self, _event: Events) {}
 }

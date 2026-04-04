@@ -13,5 +13,6 @@ pub(crate) struct Renderer {
     adapter: Option<Adapter>,
     device: Option<Device>,
     queue: Option<Queue>,
+    pub(crate) clear_color: wgpu::Color,
     pub(crate) window: Option<Arc<Window>>,
 }

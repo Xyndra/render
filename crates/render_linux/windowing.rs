@@ -68,7 +68,6 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 self.renderer.as_mut().unwrap().clear();
-                self.window.as_ref().unwrap().request_redraw();
             }
             WindowEvent::CursorMoved {
                 device_id: _device_id,
