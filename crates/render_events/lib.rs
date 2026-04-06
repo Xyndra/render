@@ -1,11 +1,13 @@
 use std::sync::{LazyLock, Mutex};
 
+#[derive(Debug)]
 pub enum ClickDevice {
     Mouse,
     Touch,
     Stylus,
 }
 
+#[derive(Debug)]
 pub enum SecondaryClickType {
     LongClick,
     MiddleClick,
@@ -16,6 +18,7 @@ pub enum SecondaryClickType {
 }
 
 static MOUSE_POS: LazyLock<Mutex<(i32, i32)>> = LazyLock::new(|| Mutex::new((0, 0)));
+#[derive(Debug)]
 pub enum Events {
     Hover {
         x: i32,

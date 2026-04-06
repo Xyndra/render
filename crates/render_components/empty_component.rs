@@ -1,5 +1,4 @@
 use crate::{RenderComponent, Shapes};
-use render_events::Events;
 use render_layout::{Sizing, SizingType};
 
 #[derive(Default)]
@@ -20,17 +19,8 @@ impl RenderComponent for EmptyComponent {
         }]
     }
 
-    fn children(&'_ self) -> Vec<Box<dyn RenderComponent>> {
-        vec![]
-    }
-
-    fn handle_event(&mut self, event: Events) {
-        match event {
-            Events::Resize { width, height } => {
-                self.width = width;
-                self.height = height;
-            }
-            _ => {}
-        }
+    fn resize(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
     }
 }

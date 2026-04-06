@@ -50,6 +50,6 @@ impl Renderer {
             window: None,
         };
         renderer.reconfigure(size.width, size.height);
-        return renderer;
+        renderer
     }
 }

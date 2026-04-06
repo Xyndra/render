@@ -1,47 +1,46 @@
 use render_events::Events;
 use render_layout::Sizing;
 
-pub mod empty_component;
+use crate::shapes::Shapes;
 
-#[derive(Debug)]
-pub enum Shapes<'a> {
-    Rectangle {
-        sizing: Sizing<'a>,
-        color: (u8, u8, u8),
-        rounding: Option<u32>,
-    },
-    ConstrainedText {
-        sizing: Sizing<'a>,
-        content: String,
-        font: String,
-    },
-}
+pub mod empty_component;
+pub mod layout_solvable;
+pub mod shapes;
 
 pub trait RenderComponent {
     fn get_sizing(&'_ self) -> Sizing<'_>;
     fn render(&'_ self) -> Vec<Shapes<'_>>;
-    fn children(&'_ self) -> Vec<Box<dyn RenderComponent>>;
-    fn handle_event(&mut self, event: Events);
-}
-
-pub trait LayoutSolvable {
-    fn get_layout(&'_ self) -> Sizing<'_>;
-    fn set_resolved_layout(&mut self, layout: Sizing);
-}
-
-impl<T: RenderComponent> LayoutSolvable for T {
-    fn get_layout(&'_ self) -> Sizing<'_> {
-        self.get_sizing()
+    fn children(&'_ self) -> Option<Vec<Box<dyn RenderComponent>>> {
+        None
     }
-
-    fn set_resolved_layout(&mut self, layout: Sizing) {
-        self.handle_event(Events::Resize {
-            width: layout
-                .resolved_width
-                .expect("Layout must be resolved before setting"),
-            height: layout
-                .resolved_height
-                .expect("Layout must be resolved before setting"),
-        });
+    fn handle_event(&mut self, event: Events) {
+        match event {
+            Events::Resize { width, height } => self.handle_resize(width, height),
+            Events::Hover { x, y } =>
+            {
+                #[allow(unused_variables)]
+                if let Some(children) = self.children() {
+                    todo!(
+                        "Handle hover event for children. Got hover at: ({}, {})",
+                        x,
+                        y
+                    )
+                }
+            }
+            _ => {
+                todo!(
+                    "Handle other events in RenderComponent. Got event: {:?}",
+                    event
+                )
+            }
+        }
     }
+    fn handle_resize(&mut self, width: u32, height: u32) {
+        self.resize(width, height);
+        #[allow(unused_variables)]
+        if let Some(children) = self.children() {
+            todo!("Layout children")
+        }
+    }
+    fn resize(&mut self, width: u32, height: u32);
 }
