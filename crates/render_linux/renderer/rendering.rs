@@ -1,8 +1,9 @@
 use crate::renderer::Renderer;
+use render_components::shapes::Shapes;
 use wgpu::{CurrentSurfaceTexture, LoadOp, StoreOp};
 
 impl Renderer {
-    pub(crate) fn clear(&mut self) {
+    pub(crate) fn render(&mut self, shapes: &[Shapes<'_>]) {
         let output = self.surface.as_ref().unwrap().get_current_texture();
         #[allow(unused_assignments)]
         let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
@@ -56,7 +57,7 @@ impl Renderer {
                 });
 
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -69,12 +70,24 @@ impl Renderer {
                 })],
                 ..Default::default()
             });
+
+            // Render shapes if we have a rectangle renderer
+            if let Some(rectangle_renderer) = &self.rectangle_renderer {
+                let window = self.window.as_ref().unwrap();
+                let size = window.inner_size();
+                rectangle_renderer.render(
+                    &mut render_pass,
+                    shapes,
+                    (size.width, size.height),
+                    self.queue.as_ref().unwrap(),
+                );
+            }
         }
         self.queue
             .as_ref()
             .unwrap()
             .submit(std::iter::once(encoder.finish()));
-        // todo! actually render something instead of just clearing
+        // Render shapes instead of just clearing
         self.window.as_ref().unwrap().pre_present_notify();
         surface_texture.unwrap().present();
         if should_reconfigure {

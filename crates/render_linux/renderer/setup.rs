@@ -1,4 +1,4 @@
-use crate::renderer::Renderer;
+use crate::renderer::{Renderer, rectangle::RectangleRenderer};
 use render_platform_options::{RenderMode, WindowOptions};
 use wgpu::{Instance, InstanceDescriptor};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -40,6 +40,9 @@ impl Renderer {
             b: window_options.clear_color.2 as f64 / 255.0,
             a: 1.0,
         };
+        // Get surface texture format for creating RectangleRenderer
+        let texture_format = surface.get_capabilities(&adapter).formats[0];
+
         let mut renderer = Self {
             instance: Some(instance),
             surface: Some(surface),
@@ -48,7 +51,14 @@ impl Renderer {
             queue: Some(queue),
             clear_color,
             window: None,
+            rectangle_renderer: None,
         };
+
+        // Initialize rectangle renderer
+        let device = renderer.device.as_ref().unwrap();
+        let rectangle_renderer = RectangleRenderer::new(device, texture_format);
+        renderer.rectangle_renderer = Some(rectangle_renderer);
+
         renderer.reconfigure(size.width, size.height);
         renderer
     }

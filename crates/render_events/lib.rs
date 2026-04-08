@@ -38,6 +38,11 @@ pub enum Events {
         width: u32,
         height: u32,
     },
+    // Move is seperate from Resize animations and drag and drop, which are already resource-intensive.
+    Move {
+        x: u32,
+        y: u32,
+    },
     KeyPress {
         key: char,
     },

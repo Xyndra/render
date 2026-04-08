@@ -27,3 +27,8 @@ Goals of the project:
 - For native, generate shapes and then use a harfbuzz binding and a high-performance SVG rendering engine
 
 If this project succeeds, I will also create a standard library for things like save storage, networking, navigation, and other things that JS has an easy version for to simplify the development further.
+
+# Credits / Thanks
+
+- [Sotrh's Learn WGPU tutorial](https://sotrh.github.io/learn-wgpu/)
+- [Nic Barker's explanation of Clay's layout algroithm](https://www.youtube.com/watch?v=by9lQvpvMIc)
