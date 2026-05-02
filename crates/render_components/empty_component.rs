@@ -1,49 +1,28 @@
-use crate::{RenderComponent, Shapes};
+use crate::{EventHandler, primitives::Rectangle};
 use render_layout::{
-    positioning::{Positioning, PositioningType},
+    InternalLayoutable, Layoutable,
     sizing::{Sizing, SizingType},
 };
+use render_proc_macro::layoutable;
 
-#[derive(Default)]
+#[layoutable]
 pub struct EmptyComponent {
-    width: u32,
-    height: u32,
-    x: u32,
-    y: u32,
+    pub color: (u8, u8, u8, u8),
 }
-impl RenderComponent for EmptyComponent {
+
+impl Layoutable for EmptyComponent {
     fn get_sizing(&'_ self) -> Sizing<'_> {
-        Sizing::new(SizingType::Grow(1), SizingType::Grow(1))
+        Sizing {
+            width: SizingType::Grow(1),
+            height: SizingType::Grow(1),
+        }
     }
-
-    fn render(&'_ self) -> Vec<Shapes<'_>> {
-        vec![Shapes::Rectangle {
-            // sizing: Sizing::new(SizingType::Grow(1), SizingType::Grow(1)),
-            sizing: Sizing {
-                width: SizingType::Grow(1),
-                resolved_width: Some(self.width),
-                height: SizingType::Grow(1),
-                resolved_height: Some(self.height),
-            },
-            // position: Positioning::default(),
-            position: Positioning {
-                x: Some(PositioningType::Auto),
-                resolved_x: Some(self.x),
-                y: Some(PositioningType::Auto),
-                resolved_y: Some(self.y),
-            },
-            color: (255, 255, 0),
-            rounding: None,
-        }]
-    }
-
-    fn resize(&mut self, width: u32, height: u32) {
-        self.width = width;
-        self.height = height;
-    }
-
-    fn reposition(&mut self, x: u32, y: u32) {
-        self.x = x;
-        self.y = y;
+    fn children(&self) -> Vec<Box<dyn InternalLayoutable>> {
+        let mut rect = Rectangle::new();
+        println!("Color: {:?}", self.color);
+        rect.color = self.color;
+        vec![Box::new(rect)]
     }
 }
+
+impl EventHandler for EmptyComponent {}

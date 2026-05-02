@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use render_components::RenderComponent;
+use render_components::EventHandler;
 use render_events::{ClickDevice, Events};
 use render_platform_options::{RenderMode, WindowOptions};
 use winit::application::ApplicationHandler;
@@ -15,7 +15,7 @@ use crate::renderer::Renderer;
 struct App {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
-    base_component: Option<Box<dyn RenderComponent>>,
+    base_component: Option<Box<dyn EventHandler>>,
     window_options: WindowOptions,
 }
 
@@ -67,7 +67,7 @@ impl ApplicationHandler for App {
                     });
             }
             WindowEvent::RedrawRequested => {
-                if let Some(base_component) = &self.base_component {
+                if let Some(base_component) = self.base_component.as_mut() {
                     let shapes = base_component.render();
                     self.renderer.as_mut().unwrap().render(&shapes);
                 } else {
@@ -82,10 +82,10 @@ impl ApplicationHandler for App {
                     .as_mut()
                     .unwrap()
                     .handle_event(Events::Hover {
-                        x: position.x as i32,
-                        y: position.y as i32,
+                        x: position.x as u32,
+                        y: position.y as u32,
                     });
-                render_events::update_mouse_position(position.x as i32, position.y as i32);
+                render_events::update_mouse_position(position.x as u32, position.y as u32);
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 if state == ElementState::Pressed && button == MouseButton::Left {
@@ -105,7 +105,7 @@ impl ApplicationHandler for App {
     }
 }
 
-pub fn run(base_component: impl RenderComponent + 'static, window_options: WindowOptions) {
+pub fn run(base_component: impl EventHandler + 'static, window_options: WindowOptions) {
     env_logger::init();
     let event_loop = EventLoop::new().expect("Failed to create event loop");
 

@@ -1,21 +1,19 @@
-mod types;
-pub use crate::positioning::types::PositioningType;
-
 #[derive(Debug, Clone, Default)]
 pub struct Positioning {
-    pub x: Option<PositioningType>,
-    pub resolved_x: Option<u32>,
-    pub y: Option<PositioningType>,
-    pub resolved_y: Option<u32>,
+    pub x: PositioningType,
+    pub y: PositioningType,
 }
 
-impl Positioning {
-    pub fn new(x: PositioningType, y: PositioningType) -> Self {
-        Self {
-            x: Some(x),
-            resolved_x: None,
-            y: Some(y),
-            resolved_y: None,
-        }
-    }
+#[derive(Debug, Clone, Default)]
+pub enum PositioningType {
+    #[default]
+    Auto,
+    Relative(u32),
+    /// must be between 0 and 1
+    Fractional(f64),
+    /// Left/Top
+    Start,
+    Center,
+    /// Right/Bottom
+    End,
 }

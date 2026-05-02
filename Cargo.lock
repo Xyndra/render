@@ -1504,6 +1504,7 @@ name = "render"
 version = "0.1.0"
 dependencies = [
  "render_components",
+ "render_layout",
  "render_linux",
  "render_platform_options",
 ]
@@ -1514,6 +1515,7 @@ version = "0.1.0"
 dependencies = [
  "render_events",
  "render_layout",
+ "render_proc_macro",
 ]
 
 [[package]]
@@ -1542,6 +1544,16 @@ dependencies = [
 [[package]]
 name = "render_platform_options"
 version = "0.1.0"
+
+[[package]]
+name = "render_proc_macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "render_layout",
+ "syn",
+]
 
 [[package]]
 name = "renderdoc-sys"

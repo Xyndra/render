@@ -1,12 +1,14 @@
 [package]
-name = "render_components"
+name = "render_proc_macro"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
+proc-macro = true
 path = "lib.rs"
 
 [dependencies]
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
 render_layout = { path = "../render_layout" }
-render_events = { path = "../render_events" }
-render_proc_macro = { path = "../render_proc_macro" }

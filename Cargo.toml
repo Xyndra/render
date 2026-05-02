@@ -9,6 +9,11 @@ path = "render/lib.rs"
 [dependencies]
 render_components = { path = "crates/render_components" }
 render_platform_options = { path = "crates/render_platform_options" }
+# TODO: figure out a way to remove this
+render_layout = { path = "crates/render_layout" }
+
+[profile.release]
+lto = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 render_linux = { path = "crates/render_linux" }
@@ -19,6 +24,7 @@ members = [
     "crates/render_linux",
     "crates/render_components",
     "crates/render_platform_options",
+    "crates/render_proc_macro",
 ]
 
 [[example]]

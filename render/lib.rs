@@ -1,11 +1,11 @@
-use render_components::RenderComponent;
+use render_components::EventHandler;
 use render_platform_options::WindowOptions;
 
-pub fn run_default(basecomponent: impl RenderComponent + 'static) {
+pub fn run_default(basecomponent: impl EventHandler + 'static) {
     run(basecomponent, None);
 }
 
-pub fn run(basecomponent: impl RenderComponent + 'static, window_options: Option<WindowOptions>) {
+pub fn run(basecomponent: impl EventHandler + 'static, window_options: Option<WindowOptions>) {
     #[allow(unused_assignments)]
     let mut resolved = false;
     let window_options = window_options.unwrap_or_default();

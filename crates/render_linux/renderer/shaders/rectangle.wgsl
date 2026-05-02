@@ -1,19 +1,12 @@
-// WARNING: FULLY AI GENERATED; PLEASE REVIEW
-//
-// Rectangle shader for WGSL
-// This shader renders solid-colored rectangles
-
+// WARNING: FULLY AI GENERATED; UNDER REVIEW
 struct Uniform {
-    // Rectangle position and size in pixel coordinates
+    // Rect position and size in pixels
     rect_position: vec2f,
     rect_size: vec2f,
-    // Screen dimensions in pixels
+    // Screen dimensions in pixels (used for normalization later)
     screen_size: vec2f,
-    // Padding for vec4 alignment
     // Rounding radius (0 for sharp corners)
     rounding: f32,
-    _padding1: f32,
-    // Rectangle color (RGBA)
     color: vec4f,
 }
 
@@ -31,19 +24,17 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(input: VertexInput) -> VertexOutput {
-    // Transform from local quad coordinates [0,1] to pixel coordinates
+    // go from quad verices(mix of 0s and 1s depending on corner) to screen pixel coords
     let pixel_position = uniforms.rect_position + input.position * uniforms.rect_size;
 
-    // Convert from pixel coordinates to normalized device coordinates (NDC)
-    // NDC ranges from -1 to 1, with (0,0) at center
-    // Screen coordinates have (0,0) at top-left, so we need to flip Y
-    let ndc_position = vec2f(
+    // Convert from pixel coordinates to normalized coordinates (-1 to 1)
+    let normalized_position = vec2f(
         (pixel_position.x / uniforms.screen_size.x) * 2.0 - 1.0,
-        1.0 - (pixel_position.y / uniforms.screen_size.y) * 2.0  // Flip Y for screen coordinates
+        1.0 - (pixel_position.y / uniforms.screen_size.y) * 2.0  // Flip Y since screen Y goes down but normalized Y goes up
     );
 
     var output: VertexOutput;
-    output.position = vec4f(ndc_position, 0.0, 1.0);
+    output.position = vec4f(normalized_position, 0.0, 1.0);
     output.color = uniforms.color;
     output.local_position = input.position;
     return output;

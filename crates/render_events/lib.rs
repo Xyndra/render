@@ -17,21 +17,20 @@ pub enum SecondaryClickType {
     StylusButton(i32), // button index? (todo!)
 }
 
-static MOUSE_POS: LazyLock<Mutex<(i32, i32)>> = LazyLock::new(|| Mutex::new((0, 0)));
 #[derive(Debug)]
 pub enum Events {
     Hover {
-        x: i32,
-        y: i32,
+        x: u32,
+        y: u32,
     },
     PrimaryClick {
-        x: i32,
-        y: i32,
+        x: u32,
+        y: u32,
         click_device: ClickDevice,
     },
     SecondaryClick {
-        x: i32,
-        y: i32,
+        x: u32,
+        y: u32,
         secondary_click_type: SecondaryClickType,
     },
     Resize {
@@ -48,12 +47,13 @@ pub enum Events {
     },
 }
 
-pub fn update_mouse_position(x: i32, y: i32) {
+static MOUSE_POS: LazyLock<Mutex<(u32, u32)>> = LazyLock::new(|| Mutex::new((0, 0)));
+pub fn update_mouse_position(x: u32, y: u32) {
     let mut pos = MOUSE_POS.lock().unwrap();
     *pos = (x, y);
 }
 
-pub fn get_mouse_position() -> (i32, i32) {
+pub fn get_mouse_position() -> (u32, u32) {
     let pos = MOUSE_POS.lock().unwrap();
     *pos
 }

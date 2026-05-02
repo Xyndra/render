@@ -1,6 +1,8 @@
 // WARNING: AI GENERATED; UNDER REVIEW
 
-use render_components::shapes::Shapes;
+use render_components::primitives::Rectangle;
+use render_layout::{InternalLayoutable, Primitive};
+use std::any::Any;
 use wgpu::{include_wgsl, util::DeviceExt};
 
 /// Rectangle renderer for wgpu
@@ -20,7 +22,7 @@ struct RectangleUniform {
     rect_size: [f32; 2],
     screen_size: [f32; 2],
     rounding: f32,
-    _padding1: f32, // Padding for vec4 alignment
+    _padding1: f32, // Padding for vec4 alignment since wgsl is stupid
     color: [f32; 4],
 }
 
@@ -144,8 +146,8 @@ impl RectangleRenderer {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Cw,
-                cull_mode: Some(wgpu::Face::Back),
+                front_face: wgpu::FrontFace::Cw, // Fed-in coordinates are CCW, but vertex shader makes them CW
+                cull_mode: None,
                 unclipped_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
@@ -187,7 +189,7 @@ impl RectangleRenderer {
     pub fn render<'a>(
         &'a self,
         render_pass: &mut wgpu::RenderPass<'a>,
-        shapes: &[Shapes<'_>],
+        shapes: &[Box<dyn Primitive>],
         screen_size: (u32, u32),
         queue: &wgpu::Queue,
     ) {
@@ -197,32 +199,24 @@ impl RectangleRenderer {
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
         for shape in shapes {
-            if let Shapes::Rectangle {
-                sizing,
-                position,
-                color,
-                rounding,
-            } = shape
-            {
-                // Get resolved dimensions or use defaults
-                let width = sizing.resolved_width.expect("width was not resolved") as f32;
-                let height = sizing.resolved_height.expect("height was not resolved") as f32;
+            // Downcast from dyn Primitive to concrete Rectangle via Any
+            let any: &dyn Any = shape.as_ref();
+            if let Some(rect) = any.downcast_ref::<Rectangle>() {
+                let width = rect.get_width() as f32;
+                let height = rect.get_height() as f32;
 
-                // Convert color from (u8, u8, u8) to [f32; 4]
+                // Convert color from (u8, u8, u8, u8) to [f32; 4]
                 let color_f32 = [
-                    color.0 as f32 / 255.0,
-                    color.1 as f32 / 255.0,
-                    color.2 as f32 / 255.0,
-                    1.0, // Alpha
+                    rect.color.0 as f32 / 255.0,
+                    rect.color.1 as f32 / 255.0,
+                    rect.color.2 as f32 / 255.0,
+                    rect.color.3 as f32 / 255.0,
                 ];
 
                 // Get rounding value
-                let rounding_f32 = rounding.unwrap_or(0) as f32;
+                let rounding_f32 = rect.rounding.unwrap_or(0.0);
 
-                let position = [
-                    position.resolved_x.expect("x was not resolved") as f32,
-                    position.resolved_y.expect("y was not resolved") as f32,
-                ];
+                let position = [rect.get_x() as f32, rect.get_y() as f32];
 
                 // Update uniform buffer
                 let uniforms = RectangleUniform {
@@ -233,6 +227,7 @@ impl RectangleRenderer {
                     color: color_f32,
                     rounding: rounding_f32,
                 };
+                println!("Rendering uniforms: {:?}", uniforms);
 
                 queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
 

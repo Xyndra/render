@@ -1,9 +1,9 @@
 use crate::renderer::Renderer;
-use render_components::shapes::Shapes;
+use render_components::primitives::Primitive;
 use wgpu::{CurrentSurfaceTexture, LoadOp, StoreOp};
 
 impl Renderer {
-    pub(crate) fn render(&mut self, shapes: &[Shapes<'_>]) {
+    pub(crate) fn render(&mut self, shapes: &[Box<dyn Primitive>]) {
         let output = self.surface.as_ref().unwrap().get_current_texture();
         #[allow(unused_assignments)]
         let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
