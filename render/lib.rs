@@ -1,4 +1,4 @@
-use render_components::EventHandler;
+use render_layout::EventHandler;
 use render_platform_options::WindowOptions;
 
 pub fn run_default(basecomponent: impl EventHandler + 'static) {

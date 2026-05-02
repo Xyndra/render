@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use render_components::EventHandler;
+use render_components::primitives::primitve_from_any;
 use render_events::{ClickDevice, Events};
+use render_layout::EventHandler;
 use render_platform_options::{RenderMode, WindowOptions};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, Size};
@@ -68,7 +69,7 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 if let Some(base_component) = self.base_component.as_mut() {
-                    let shapes = base_component.render();
+                    let shapes = base_component.layout(&|any| primitve_from_any(any));
                     self.renderer.as_mut().unwrap().render(&shapes);
                 } else {
                     panic!("Base component is not set");

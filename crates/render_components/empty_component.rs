@@ -1,6 +1,6 @@
-use crate::{EventHandler, primitives::Rectangle};
+use crate::primitives::Rectangle;
 use render_layout::{
-    InternalLayoutable, Layoutable,
+    EventHandler, InternalLayoutable, Layoutable,
     sizing::{Sizing, SizingType},
 };
 use render_proc_macro::layoutable;

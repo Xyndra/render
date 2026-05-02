@@ -1,8 +1,9 @@
 use std::any::Any;
 
+use render_events::Events;
+
 use crate::layouting::ConvertedPrimitive;
 
-// TODO: reference clay
 pub mod layouting;
 pub mod positioning;
 pub mod sizing;
@@ -60,11 +61,16 @@ pub trait InternalLayoutable: Layoutable + Any {
 
     fn layout(
         &mut self,
-        width: u32,
-        height: u32,
         try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
     ) -> Vec<Box<dyn Primitive>> {
-        layouting::layout(self, width, height, try_convert)
+        layouting::layout(
+            self,
+            self.get_x(),
+            self.get_y(),
+            self.get_width(),
+            self.get_height(),
+            try_convert,
+        )
     }
 }
 
@@ -79,3 +85,36 @@ impl std::fmt::Debug for dyn Primitive {
         write!(f, "{}", self.serialize())
     }
 }
+
+pub trait EventHandler: InternalLayoutable {
+    fn handle_event(&mut self, event: Events) {
+        match event {
+            Events::Resize { width, height } => self.handle_resize(width, height),
+            Events::Move { x, y } => self.handle_move(x, y),
+            Events::Hover { x, y } => {
+                self.handle_hover(x, y);
+            }
+            _ => {
+                todo!(
+                    "Handle other events in RenderComponent. Got event: {:?}",
+                    event
+                )
+            }
+        }
+    }
+
+    fn handle_resize(&mut self, width: u32, height: u32) {
+        self.set_width(width);
+        self.set_height(height);
+    }
+    fn handle_move(&mut self, x: u32, y: u32) {
+        self.set_x(x);
+        self.set_y(y);
+    }
+
+    fn handle_hover(&mut self, _x: u32, _y: u32) {
+        // By default, do nothing
+    }
+}
+
+impl EventHandler for dyn InternalLayoutable {}

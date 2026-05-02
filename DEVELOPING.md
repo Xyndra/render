@@ -16,5 +16,6 @@ flowchart TD
     Platforms <--> platform_opts
     Platforms <--> components
     components <--> layout
+    layout <--> events
     layout["render layout"]
 ```

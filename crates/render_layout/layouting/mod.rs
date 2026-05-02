@@ -1,4 +1,6 @@
-use crate::{InternalLayoutable, Primitive};
+use render_events::Events;
+
+use crate::{EventHandler, InternalLayoutable, Primitive};
 use std::any::Any;
 
 pub type ConvertedPrimitive = Option<Box<dyn Primitive>>;
@@ -17,6 +19,8 @@ pub type ConvertedPrimitive = Option<Box<dyn Primitive>>;
 /// into automatically – they are never passed to `try_convert`.
 pub fn layout<T: InternalLayoutable + ?Sized>(
     base_component: &mut T,
+    x: u32,
+    y: u32,
     width: u32,
     height: u32,
     try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
@@ -27,10 +31,8 @@ pub fn layout<T: InternalLayoutable + ?Sized>(
     for child in base_component.get_children_mut().iter_mut() {
         // TODO: actual layout – resolve sizing & positioning for this child
         // before collecting its shapes.
-        child.set_x(0);
-        child.set_y(0);
-        child.set_width(width);
-        child.set_height(height);
+        child.handle_event(Events::Move { x, y });
+        child.handle_event(Events::Resize { width, height });
 
         if child.children().is_empty() {
             // Leaf node – likely a primitive.  Pass a reference to try_convert
@@ -41,7 +43,7 @@ pub fn layout<T: InternalLayoutable + ?Sized>(
             }
         } else {
             // Container node – recurse into its children.
-            let child_primitives = child.layout(width, height, try_convert);
+            let child_primitives = child.layout(try_convert);
             primitives.extend(child_primitives);
         }
     }
