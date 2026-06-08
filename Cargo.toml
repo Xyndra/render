@@ -9,8 +9,12 @@ path = "render/lib.rs"
 [dependencies]
 render_components = { path = "crates/render_components" }
 render_platform_options = { path = "crates/render_platform_options" }
+render_events = { path = "crates/render_events" }
 # TODO: figure out a way to remove this
 render_layout = { path = "crates/render_layout" }
+
+[dev-dependencies]
+render_proc_macro = { path = "crates/render_proc_macro" }
 
 [profile.release]
 lto = true
@@ -26,7 +30,3 @@ members = [
     "crates/render_platform_options",
     "crates/render_proc_macro",
 ]
-
-[[example]]
-name = "empty_window"
-path = "examples/empty_window.rs"

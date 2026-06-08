@@ -5,6 +5,9 @@ use render_layout::{InternalLayoutable, Primitive};
 use std::any::Any;
 use wgpu::{include_wgsl, util::DeviceExt};
 
+/// Maximum number of rectangles that can be rendered in a single frame
+const MAX_RECTANGLES: usize = 1024;
+
 /// Rectangle renderer for wgpu
 pub struct RectangleRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -12,6 +15,8 @@ pub struct RectangleRenderer {
     index_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
+    /// Stride between uniform entries, aligned to min_uniform_buffer_offset_alignment
+    dynamic_alignment: u64,
 }
 
 /// Uniform data for rectangle rendering
@@ -77,18 +82,19 @@ impl RectangleRenderer {
         let shader_source = include_wgsl!("shaders/rectangle.wgsl");
         let shader = device.create_shader_module(shader_source);
 
-        // Create uniform buffer
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        // AI WARNING from here to the bind group
+        // Calculate dynamic alignment for uniform buffer offsets
+        let min_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
+        let uniform_size = std::mem::size_of::<RectangleUniform>() as u64;
+        let dynamic_alignment = (uniform_size + min_alignment - 1) & !(min_alignment - 1);
+
+        // Create uniform buffer large enough for MAX_RECTANGLES with proper alignment
+        let buffer_size = dynamic_alignment * MAX_RECTANGLES as u64;
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Rectangle Uniform Buffer"),
-            contents: bytemuck::cast_slice(&[RectangleUniform {
-                rect_position: [0.0, 0.0],
-                rect_size: [100.0, 100.0],
-                screen_size: [800.0, 600.0],
-                _padding1: 0.0,
-                color: [1.0, 0.0, 0.0, 1.0], // Red
-                rounding: 0.0,
-            }]),
+            size: buffer_size,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         // Create bind group layout
@@ -99,20 +105,27 @@ impl RectangleRenderer {
                 visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
+                    has_dynamic_offset: true,
                     min_binding_size: None,
                 },
                 count: None,
             }],
         });
 
-        // Create bind group
+        // Create bind group with explicit size matching one uniform entry
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Rectangle Bind Group"),
             layout: &bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &uniform_buffer,
+                    offset: 0,
+                    size: Some(
+                        std::num::NonZeroU64::new(uniform_size)
+                            .expect("uniform_size must be non-zero"),
+                    ),
+                }),
             }],
         });
 
@@ -182,6 +195,7 @@ impl RectangleRenderer {
             index_buffer,
             uniform_buffer,
             bind_group,
+            dynamic_alignment,
         }
     }
 
@@ -194,14 +208,21 @@ impl RectangleRenderer {
         queue: &wgpu::Queue,
     ) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
+        let mut rect_index: u32 = 0;
         for shape in shapes {
             // Downcast from dyn Primitive to concrete Rectangle via Any
             let any: &dyn Any = shape.as_ref();
             if let Some(rect) = any.downcast_ref::<Rectangle>() {
+                if rect_index >= MAX_RECTANGLES as u32 {
+                    eprintln!(
+                        "Warning: exceeded max renderable rectangles ({}), skipping remaining",
+                        MAX_RECTANGLES
+                    );
+                    break;
+                }
                 let width = rect.get_width() as f32;
                 let height = rect.get_height() as f32;
 
@@ -218,7 +239,6 @@ impl RectangleRenderer {
 
                 let position = [rect.get_x() as f32, rect.get_y() as f32];
 
-                // Update uniform buffer
                 let uniforms = RectangleUniform {
                     rect_position: position,
                     rect_size: [width, height],
@@ -227,12 +247,22 @@ impl RectangleRenderer {
                     color: color_f32,
                     rounding: rounding_f32,
                 };
-                println!("Rendering uniforms: {:?}", uniforms);
 
-                queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+                // Write this rectangle's uniforms to its aligned slot in the buffer
+                let offset = rect_index as u64 * self.dynamic_alignment;
+                queue.write_buffer(
+                    &self.uniform_buffer,
+                    offset,
+                    bytemuck::cast_slice(&[uniforms]),
+                );
+
+                // Set bind group with dynamic offset to point at this rectangle's data
+                render_pass.set_bind_group(0, &self.bind_group, &[offset as u32]);
 
                 // Draw the rectangle (quad with 6 indices)
                 render_pass.draw_indexed(0..6, 0, 0..1);
+
+                rect_index += 1;
             }
         }
     }

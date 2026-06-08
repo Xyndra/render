@@ -11,7 +11,7 @@ pub struct EmptyComponent {
 }
 
 impl Layoutable for EmptyComponent {
-    fn get_sizing(&'_ self) -> Sizing<'_> {
+    fn get_sizing(&self) -> Sizing {
         Sizing {
             width: SizingType::Grow(1),
             height: SizingType::Grow(1),

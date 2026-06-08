@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, error::Error};
 
 use render_events::Events;
 
@@ -8,13 +8,15 @@ pub mod layouting;
 pub mod positioning;
 pub mod sizing;
 
-pub struct Layout<'a> {
-    pub sizing: sizing::Sizing<'a>,
+pub struct Layout {
+    pub sizing: sizing::Sizing,
     pub positioning: positioning::Positioning,
+    /// (x, y, width, height)
+    pub effective_layout: Option<(u32, u32, u32, u32)>,
 }
 
 pub trait Layoutable {
-    fn get_sizing(&'_ self) -> sizing::Sizing<'_>;
+    fn get_sizing(&self) -> sizing::Sizing;
     fn get_position(&self) -> positioning::Positioning {
         positioning::Positioning::default()
     }
@@ -46,6 +48,13 @@ pub trait InternalLayoutable: Layoutable + Any {
             self.get_height()
         )
     }
+    fn get_layout(&self) -> Layout {
+        Layout {
+            sizing: self.get_sizing(),
+            positioning: self.get_position(),
+            effective_layout: None,
+        }
+    }
     // WARNING: AI GENERATED
     /// Upcast this node to a `&dyn Layoutable` reference.
     ///
@@ -62,7 +71,8 @@ pub trait InternalLayoutable: Layoutable + Any {
     fn layout(
         &mut self,
         try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
-    ) -> Vec<Box<dyn Primitive>> {
+        dpi: u32,
+    ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
         layouting::layout(
             self,
             self.get_x(),
@@ -70,6 +80,7 @@ pub trait InternalLayoutable: Layoutable + Any {
             self.get_width(),
             self.get_height(),
             try_convert,
+            dpi,
         )
     }
 }

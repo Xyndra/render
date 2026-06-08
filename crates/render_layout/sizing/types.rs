@@ -1,14 +1,13 @@
+use std::cmp::min;
+
 use crate::sizing::SizingType;
 
-impl<'a> SizingType<'a> {
-    pub fn between(a: SizingType<'a>, b: SizingType<'a>) -> SizingType<'a> {
+impl SizingType {
+    pub fn between(a: SizingType, b: SizingType) -> SizingType {
         SizingType::Constrained(Box::new(a), Box::new(b))
     }
 
-    pub fn horizontal_margin(
-        s: SizingType<'a>,
-        horizontal_margin: Box<SizingType<'a>>,
-    ) -> SizingType<'a> {
+    pub fn horizontal_margin(s: SizingType, horizontal_margin: Box<SizingType>) -> SizingType {
         SizingType::WithMargin(
             Box::new(s),
             (
@@ -20,10 +19,7 @@ impl<'a> SizingType<'a> {
         )
     }
 
-    pub fn vertical_margin(
-        s: SizingType<'a>,
-        vertical_margin: Box<SizingType<'a>>,
-    ) -> SizingType<'a> {
+    pub fn vertical_margin(s: SizingType, vertical_margin: Box<SizingType>) -> SizingType {
         SizingType::WithMargin(
             Box::new(s),
             (
@@ -33,5 +29,20 @@ impl<'a> SizingType<'a> {
                 Some(vertical_margin),
             ),
         )
+    }
+
+    pub fn get_minimum(&self, dpi: u32) -> u32 {
+        match &self {
+            SizingType::Fixed(f) => *f,
+            SizingType::DPICm(cm) => ((cm / 2.54) * dpi as f64) as u32,
+            SizingType::Grow(_) => 0,
+            SizingType::Constrained(a, b) => min(a.get_minimum(dpi), b.get_minimum(dpi)),
+            SizingType::WithMargin(_s, _) => todo!(),
+            SizingType::FitContent => todo!(),
+            SizingType::Shrink => todo!(),
+            SizingType::Fill(_) => todo!(),
+            SizingType::AspectRatio(_) => todo!(),
+            SizingType::Dependent(_s, _) => todo!(),
+        }
     }
 }

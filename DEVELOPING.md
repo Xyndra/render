@@ -19,3 +19,42 @@ flowchart TD
     layout <--> events
     layout["render layout"]
 ```
+
+# Algorithm
+
+Rules for elements:
+- It must work no matter which size it is given. The parent is responsible for giving it the right size. If it is too small or too big, it may display a red box to indicate that, but it may not error or panic!
+- There is no such thing as absolute positioning. If you want something to appear outside the current element, go to the element it should appear in! Send some kind of signal there, like a global boolean flag. If this project grows big enough, a signaling system will be implemented, but for now, just go and do it manually.
+
+```mermaid
+flowchart TD
+    subgraph Events
+        Redraw
+        Click["Positioned events:\n Click, Hover, Touch, Stylus, ..."]
+        Keyboard["Positionless events:\n Keyboard, Controller, ..."]
+    end
+    Computed{Layout Already Computed?} -- Yes --> Load["Load stored"]
+    Computed -- No --> Layout
+    Redraw --> Computed
+    subgraph Layout
+        direction TB
+        Min["Apply minimum size constraints"] --> Wrap 
+        Wrap["Wrap content (if wanted)"] --> Expand
+        Expand["Expand to fill space (if wanted)"] --> Position["Position elements"]
+        Position --> Save
+        Save["Save Layout to Element"]
+    end
+    Load <--> Save
+    Load --> Collect
+    Save --> Collect
+    Collect["Collect Primitives"] --> Pass["Pass to Platform"]
+
+    Click --> Find
+    Find["Find Subelements "] <--> Save
+    Find <-- recursive --> Passthrough
+    Passthrough --> Consume["Consume Click/..."]
+
+    Keyboard --> Global["Global Keyboard/... State"]
+    App -- register callbacks --> Global
+    Global --> Execute["Execute registered callbacks"]
+```

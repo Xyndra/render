@@ -69,8 +69,10 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 if let Some(base_component) = self.base_component.as_mut() {
-                    let shapes = base_component.layout(&|any| primitve_from_any(any));
-                    self.renderer.as_mut().unwrap().render(&shapes);
+                    // TODO: Get real DPI
+                    let dpi = 96;
+                    let shapes = base_component.layout(&|any| primitve_from_any(any), dpi);
+                    self.renderer.as_mut().unwrap().render(&shapes.unwrap());
                 } else {
                     panic!("Base component is not set");
                 }

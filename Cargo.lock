@@ -1504,9 +1504,11 @@ name = "render"
 version = "0.1.0"
 dependencies = [
  "render_components",
+ "render_events",
  "render_layout",
  "render_linux",
  "render_platform_options",
+ "render_proc_macro",
 ]
 
 [[package]]
