@@ -26,8 +26,8 @@ struct RectangleUniform {
     rect_position: [f32; 2],
     rect_size: [f32; 2],
     screen_size: [f32; 2],
-    rounding: f32,
-    _padding1: f32, // Padding for vec4 alignment since wgsl is stupid
+    filler: [f32; 2], // Padding to align to 16 bytes
+    rounding: [f32; 4],
     color: [f32; 4],
 }
 
@@ -235,7 +235,9 @@ impl RectangleRenderer {
                 ];
 
                 // Get rounding value
-                let rounding_f32 = rect.rounding.unwrap_or(0.0);
+                let mut rounding_f32: [f32; 4] =
+                    rect.rounding.unwrap_or((0.0, 0.0, 0.0, 0.0)).into();
+                rounding_f32 = rounding_f32.map(|a| a * (width.min(height) / 2.0)); // convert from percentage to pixels
 
                 let position = [rect.get_x() as f32, rect.get_y() as f32];
 
@@ -243,9 +245,9 @@ impl RectangleRenderer {
                     rect_position: position,
                     rect_size: [width, height],
                     screen_size: [screen_size.0 as f32, screen_size.1 as f32],
-                    _padding1: 0.0,
-                    color: color_f32,
+                    filler: [0.0, 0.0], // Unused padding
                     rounding: rounding_f32,
+                    color: color_f32,
                 };
 
                 // Write this rectangle's uniforms to its aligned slot in the buffer

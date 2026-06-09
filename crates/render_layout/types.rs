@@ -4,5 +4,6 @@ pub enum LayoutType {
     AbsoluteDDDD(f64, f64, f64, f64),
     AbsoluteFrFrFrFr(f32, f32, f32, f32),
     AbsolutePxPxGrowGrow(u32, u32),
+    AbsoluteBg,
     // Possibly add mixed variants using a macro
 }

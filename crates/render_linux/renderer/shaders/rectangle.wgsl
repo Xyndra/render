@@ -1,12 +1,11 @@
-// WARNING: FULLY AI GENERATED; UNDER REVIEW
+// WARNING: AI GENERATED; UNDER REVIEW
 struct Uniform {
     // Rect position and size in pixels
     rect_position: vec2f,
     rect_size: vec2f,
     // Screen dimensions in pixels (used for normalization later)
     screen_size: vec2f,
-    // Rounding radius (0 for sharp corners)
-    rounding: f32,
+    rounding: vec4f,
     color: vec4f,
 }
 
@@ -19,7 +18,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) color: vec4f,
-    @location(1) local_position: vec2f,
+    @location(1) pixel_position: vec2f,
 }
 
 @vertex
@@ -36,49 +35,69 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
     output.position = vec4f(normalized_position, 0.0, 1.0);
     output.color = uniforms.color;
-    output.local_position = input.position;
+    output.pixel_position = pixel_position;
     return output;
 }
 
+// Human starting here
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4f {
     var color = input.color;
 
-    // Handle rounded corners if rounding > 0
-    if uniforms.rounding > 0.0 {
-        // Convert local position [0,1] to pixel coordinates within the rectangle
-        let local_pixel = input.local_position * uniforms.rect_size;
-
-        // Calculate distance to nearest corner
-        let corner_size = vec2f(uniforms.rounding, uniforms.rounding);
-
-        // Check each corner region
-        if local_pixel.x < uniforms.rounding && local_pixel.y < uniforms.rounding {
-            // Top-left corner
-            let corner_center = corner_size;
-            let dist = distance(local_pixel, corner_center);
-            if dist > uniforms.rounding {
+    let half_size = uniforms.rect_size / 2.0;
+    let origin_position = (input.pixel_position - uniforms.rect_position) - half_size; // (pixel_pos - offset -> coords from 0,0) - size/2 -> center at 0,0
+    // rounding order with these if else clauses: w z y x
+    if origin_position.y > 0 {
+        // Above origin
+        if origin_position.x > 0 {
+            // Bottom-right
+            if origin_position.x < half_size.x - uniforms.rounding.w || origin_position.y < half_size.y - uniforms.rounding.w {
+                return color;
+            } else {
+                let a = origin_position.x - half_size.x + uniforms.rounding.w;
+                let b = origin_position.y - half_size.y + uniforms.rounding.w;
+                if (a * a)/*a²*/ + (b * b)/*b²*/ < uniforms.rounding.w * uniforms.rounding.w {
+                    return color;
+                }
                 discard;
             }
-        } else if local_pixel.x > uniforms.rect_size.x - uniforms.rounding && local_pixel.y < uniforms.rounding {
-            // Top-right corner
-            let corner_center = vec2f(uniforms.rect_size.x - uniforms.rounding, uniforms.rounding);
-            let dist = distance(local_pixel, corner_center);
-            if dist > uniforms.rounding {
+        } else {
+            // Bottom-left
+            if -origin_position.x < half_size.x - uniforms.rounding.z || origin_position.y < half_size.y - uniforms.rounding.z {
+                return color;
+            } else {
+                let a = origin_position.x + half_size.x - uniforms.rounding.z;
+                let b = origin_position.y - half_size.y + uniforms.rounding.z;
+                if (a * a)/*a²*/ + (b * b)/*b²*/ < uniforms.rounding.z * uniforms.rounding.z {
+                    return color;
+                }
                 discard;
             }
-        } else if local_pixel.x < uniforms.rounding && local_pixel.y > uniforms.rect_size.y - uniforms.rounding {
-            // Bottom-left corner
-            let corner_center = vec2f(uniforms.rounding, uniforms.rect_size.y - uniforms.rounding);
-            let dist = distance(local_pixel, corner_center);
-            if dist > uniforms.rounding {
+        }
+    } else {
+        // Below origin
+        if origin_position.x > 0 {
+            // Top-right
+            if origin_position.x < half_size.x - uniforms.rounding.y || -origin_position.y < half_size.y - uniforms.rounding.y {
+                return color;
+            } else {
+                let a = origin_position.x - half_size.x + uniforms.rounding.y;
+                let b = origin_position.y + half_size.y - uniforms.rounding.y;
+                if (a * a)/*a²*/ + (b * b)/*b²*/ < uniforms.rounding.y * uniforms.rounding.y {
+                    return color;
+                }
                 discard;
             }
-        } else if local_pixel.x > uniforms.rect_size.x - uniforms.rounding && local_pixel.y > uniforms.rect_size.y - uniforms.rounding {
-            // Bottom-right corner
-            let corner_center = vec2f(uniforms.rect_size.x - uniforms.rounding, uniforms.rect_size.y - uniforms.rounding);
-            let dist = distance(local_pixel, corner_center);
-            if dist > uniforms.rounding {
+        } else {
+            // Top-left
+            if -origin_position.x < half_size.x - uniforms.rounding.x || -origin_position.y < half_size.y - uniforms.rounding.x {
+                return color;
+            } else {
+                let a = origin_position.x + half_size.x - uniforms.rounding.x;
+                let b = origin_position.y + half_size.y - uniforms.rounding.x;
+                if (a * a)/*a²*/ + (b * b)/*b²*/ < uniforms.rounding.x * uniforms.rounding.x {
+                    return color;
+                }
                 discard;
             }
         }

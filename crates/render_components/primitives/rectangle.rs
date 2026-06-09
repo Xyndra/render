@@ -5,7 +5,8 @@ use render_proc_macro::layoutable;
 #[layoutable(custom_default)]
 pub struct Rectangle {
     pub color: (u8, u8, u8, u8),
-    pub rounding: Option<f32>,
+    /// Percentages for (left-top, right-top, left-bottom, right-bottom)
+    pub rounding: Option<(f32, f32, f32, f32)>,
 }
 
 impl Primitive for Rectangle {}
