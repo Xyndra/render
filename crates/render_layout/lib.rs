@@ -1,26 +1,13 @@
-use std::{any::Any, error::Error};
-
 use render_events::Events;
-
-use crate::layouting::ConvertedPrimitive;
-
-pub mod layouting;
-pub mod positioning;
-pub mod sizing;
-
-pub struct Layout {
-    pub sizing: sizing::Sizing,
-    pub positioning: positioning::Positioning,
-    /// (x, y, width, height)
-    pub effective_layout: Option<(u32, u32, u32, u32)>,
-}
+use std::{any::Any, error::Error};
+pub mod absolute;
+mod types;
+pub use types::*;
+mod general;
+pub use general::*;
 
 pub trait Layoutable {
-    fn get_sizing(&self) -> sizing::Sizing;
-    fn get_position(&self) -> positioning::Positioning {
-        positioning::Positioning::default()
-    }
-    fn children(&self) -> Vec<Box<dyn InternalLayoutable>> {
+    fn children(&self) -> Vec<Layouted<dyn InternalLayoutable>> {
         vec![]
     }
 }
@@ -34,7 +21,7 @@ pub trait InternalLayoutable: Layoutable + Any {
     fn set_x(&mut self, x: u32);
     fn get_y(&self) -> u32;
     fn set_y(&mut self, y: u32);
-    fn get_children_mut(&mut self) -> &mut Vec<Box<dyn InternalLayoutable>>;
+    fn get_children_mut(&mut self) -> &mut Vec<Layouted<dyn InternalLayoutable>>;
     fn new() -> Self
     where
         Self: Sized;
@@ -47,13 +34,6 @@ pub trait InternalLayoutable: Layoutable + Any {
             self.get_width(),
             self.get_height()
         )
-    }
-    fn get_layout(&self) -> Layout {
-        Layout {
-            sizing: self.get_sizing(),
-            positioning: self.get_position(),
-            effective_layout: None,
-        }
     }
     // WARNING: AI GENERATED
     /// Upcast this node to a `&dyn Layoutable` reference.
@@ -73,13 +53,14 @@ pub trait InternalLayoutable: Layoutable + Any {
         try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
         dpi: u32,
     ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
-        layouting::layout(
+        general_layout(
             self,
             self.get_x(),
             self.get_y(),
             self.get_width(),
             self.get_height(),
             try_convert,
+            &absolute::absolute_layout, // change this
             dpi,
         )
     }

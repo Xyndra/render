@@ -116,7 +116,7 @@ fn get_missing_fields(existing_fields: &[String]) -> Vec<syn::Field> {
         ("y", "u32"),
         (
             "children",
-            "Vec<Box<dyn render_layout::InternalLayoutable>>",
+            "Vec<render_layout::Layouted<dyn render_layout::InternalLayoutable>>",
         ),
     ];
 
@@ -225,7 +225,7 @@ fn generate_layoutable_impl(struct_name: &Ident) -> proc_macro2::TokenStream {
                 self.y = y;
             }
 
-            fn get_children_mut(&mut self) -> &mut Vec<Box<dyn render_layout::InternalLayoutable>> {
+            fn get_children_mut(&mut self) -> &mut Vec<render_layout::Layouted<dyn render_layout::InternalLayoutable>> {
                 &mut self.children
             }
 

@@ -23,7 +23,7 @@ flowchart TD
 # Algorithm
 
 Rules for elements:
-- It must work no matter which size it is given. The parent is responsible for giving it the right size. If it is too small or too big, it may display a red box to indicate that, but it may not error or panic!
+- It must work no matter which size it is given. The parent is responsible for giving it the right size. If it is too small or too big, it may display a red box to indicate that or error but **never panic**!
 - There is no such thing as absolute positioning. If you want something to appear outside the current element, go to the element it should appear in! Send some kind of signal there, like a global boolean flag. If this project grows big enough, a signaling system will be implemented, but for now, just go and do it manually.
 
 ```mermaid
@@ -38,10 +38,9 @@ flowchart TD
     Redraw --> Computed
     subgraph Layout
         direction TB
-        Min["Apply minimum size constraints"] --> Wrap 
-        Wrap["Wrap content (if wanted)"] --> Expand
-        Expand["Expand to fill space (if wanted)"] --> Position["Position elements"]
-        Position --> Save
+        Kind["Determine layout kind"] -- Absolute Layout --> Position
+        Position["Use given positions"] --> Size
+        Size["If wanted, grow (up to the edges)"] --> Save
         Save["Save Layout to Element"]
     end
     Load <--> Save

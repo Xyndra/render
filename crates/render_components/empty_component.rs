@@ -1,8 +1,5 @@
 use crate::primitives::Rectangle;
-use render_layout::{
-    EventHandler, InternalLayoutable, Layoutable,
-    sizing::{Sizing, SizingType},
-};
+use render_layout::{EventHandler, InternalLayoutable, LayoutType, Layoutable, Layouted};
 use render_proc_macro::layoutable;
 
 #[layoutable]
@@ -11,17 +8,11 @@ pub struct EmptyComponent {
 }
 
 impl Layoutable for EmptyComponent {
-    fn get_sizing(&self) -> Sizing {
-        Sizing {
-            width: SizingType::Grow(1),
-            height: SizingType::Grow(1),
-        }
-    }
-    fn children(&self) -> Vec<Box<dyn InternalLayoutable>> {
+    fn children(&self) -> Vec<Layouted<dyn InternalLayoutable>> {
         let mut rect = Rectangle::new();
         println!("Color: {:?}", self.color);
         rect.color = self.color;
-        vec![Box::new(rect)]
+        vec![Layouted::new(rect, LayoutType::AbsolutePxPxGrowGrow(0, 0))]
     }
 }
 
