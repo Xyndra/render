@@ -108,7 +108,7 @@ impl ApplicationHandler for App {
 }
 
 pub fn run(base_component: impl EventHandler + 'static, window_options: WindowOptions) {
-    env_logger::init();
+    stderrlog::new().init().unwrap();
     let event_loop = EventLoop::new().expect("Failed to create event loop");
 
     match window_options.render_mode {
