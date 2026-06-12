@@ -2,7 +2,7 @@ use std::{any::Any, error::Error, ops::Deref, slice::IterMut};
 
 use render_events::Events;
 
-use crate::{EventHandler, InternalLayoutable, LayoutType, Primitive};
+use crate::{Area, EventHandler, InternalLayoutable, LayoutType, Primitive};
 
 pub struct Layouted<T: ?Sized> {
     pub element: Box<T>,
@@ -30,6 +30,7 @@ impl<T> Deref for Layouted<T> {
 }
 
 pub type ConvertedPrimitive = Option<Box<dyn Primitive>>;
+pub type ChildIterator<'a> = IterMut<'a, Layouted<dyn InternalLayoutable + 'static>>;
 
 // WARNING: AI generated
 /// TODO: Adjust this comment to reflect refactor
@@ -44,32 +45,18 @@ pub type ConvertedPrimitive = Option<Box<dyn Primitive>>;
 ///
 /// Container children (those whose `children()` is non-empty) are recursed
 /// into automatically – they are never passed to `try_convert`.
+#[allow(clippy::type_complexity)]
 pub fn general_layout<T: InternalLayoutable + ?Sized>(
     base_component: &mut T,
-    x: u32,
-    y: u32,
-    width: u32,
-    height: u32,
+    area: Area,
     try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
-    specific_layout: &dyn Fn(
-        u32,
-        u32,
-        u32,
-        u32,
-        IterMut<'_, Layouted<dyn InternalLayoutable + 'static>>,
-    ) -> Result<(), Box<dyn Error>>,
+    specific_layout: &dyn Fn(Area, ChildIterator<'_>) -> Result<(), Box<dyn Error>>,
     dpi: u32,
 ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
     // TODO: add some protections against stack overflow since this is recursive
     let mut primitives: Vec<Box<dyn Primitive>> = Vec::new();
 
-    specific_layout(
-        x,
-        y,
-        width,
-        height,
-        base_component.get_children_mut().iter_mut(),
-    )?;
+    specific_layout(area, base_component.get_children_mut().iter_mut())?;
 
     for child in base_component.get_children_mut().iter_mut() {
         let (ex, ey, ewidth, eheight) = child.effective_layout.unwrap();

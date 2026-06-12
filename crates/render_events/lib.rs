@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use std::sync::{LazyLock, Mutex};
 
 #[derive(Debug)]

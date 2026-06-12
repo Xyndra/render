@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // WARNING: AI GENERATED; UNDER REVIEW
 
 //! Proc macro for automatically adding layout fields and implementing Layoutable trait.

@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use render_events::Events;
 use std::{any::Any, error::Error};
 pub mod absolute;
@@ -5,6 +7,8 @@ mod types;
 pub use types::*;
 mod general;
 pub use general::*;
+
+type Area = (u32, u32, u32, u32);
 
 pub trait Layoutable {
     fn children(&self) -> Vec<Layouted<dyn InternalLayoutable>> {
@@ -53,12 +57,15 @@ pub trait InternalLayoutable: Layoutable + Any {
         try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
         dpi: u32,
     ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
-        general_layout(
-            self,
+        let area = (
             self.get_x(),
             self.get_y(),
             self.get_width(),
             self.get_height(),
+        );
+        general_layout(
+            self,
+            area,
             try_convert,
             &absolute::absolute_layout, // change this
             dpi,

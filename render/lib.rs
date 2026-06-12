@@ -1,9 +1,10 @@
-use std::{fs::File, io::Write};
+#![forbid(unsafe_code)]
 
 use render_components::primitives::primitve_from_any;
 use render_events::Events;
 use render_layout::EventHandler;
 use render_platform_options::WindowOptions;
+use std::{fs::File, io::Write};
 
 pub fn run_default(basecomponent: impl EventHandler + 'static) {
     run(basecomponent, None);

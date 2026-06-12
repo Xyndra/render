@@ -34,11 +34,10 @@ impl ApplicationHandler for App {
         self.window = Some(Arc::new(window));
         let size = self.window.as_ref().unwrap().inner_size();
         self.renderer = Some(Renderer::setup(
-            self.window.as_ref().unwrap().as_ref(),
+            self.window.clone().unwrap(),
             size,
             self.window_options.clone(),
         ));
-        self.renderer.as_mut().unwrap().window = self.window.clone();
         self.base_component
             .as_mut()
             .unwrap()

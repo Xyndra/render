@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 #[derive(PartialEq, Clone, Default)]
 pub enum RenderMode {
     HighPerformance,

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::renderer::{Renderer, rectangle::RectangleRenderer};
 use render_platform_options::{RenderMode, WindowOptions};
 use wgpu::{Instance, InstanceDescriptor};
@@ -5,14 +7,13 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 impl Renderer {
     pub fn setup(
-        window_ptr: *const Window,
+        window: Arc<Window>,
         size: PhysicalSize<u32>,
         window_options: WindowOptions,
     ) -> Self {
         let instance = Instance::new(InstanceDescriptor::new_without_display_handle());
-        // SAFETY: window_ptr remains valid because window hasn't been moved yet
         let surface = instance
-            .create_surface(unsafe { &*window_ptr })
+            .create_surface(window.clone())
             .expect("Failed to create surface");
         let high_performance = window_options.render_mode == RenderMode::HighPerformance;
         let power_preference = if high_performance {
@@ -50,7 +51,7 @@ impl Renderer {
             device: Some(device),
             queue: Some(queue),
             clear_color,
-            window: None,
+            window: Some(window),
             rectangle_renderer: None,
         };
 

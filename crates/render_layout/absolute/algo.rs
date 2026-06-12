@@ -1,13 +1,8 @@
-use crate::{InternalLayoutable, LayoutType, Layouted};
-use std::{error::Error, slice::IterMut};
+use crate::{Area, ChildIterator, LayoutType};
+use std::error::Error;
 
-pub fn absolute_layout(
-    x: u32,
-    y: u32,
-    width: u32,
-    height: u32,
-    children: IterMut<'_, Layouted<dyn InternalLayoutable + 'static>>,
-) -> Result<(), Box<dyn Error>> {
+pub fn absolute_layout(area: Area, children: ChildIterator) -> Result<(), Box<dyn Error>> {
+    let (x, y, width, height) = area;
     for child in children {
         match child.layout_type {
             LayoutType::AbsolutePxPxGrowGrow(ex, ey) => {
@@ -17,7 +12,7 @@ pub fn absolute_layout(
             LayoutType::AbsoluteBg => child.effective_layout = Some((x, y, width, height)),
             LayoutType::AbsoluteFrFrFrFr(ex1, ey1, ex2, ey2) => {
                 if ex1 >= 1.0 || ey1 >= 1.0 || ex2 > 1.0 || ey2 > 1.0 {
-                    return Err(format!("Fraction size bigger than 1").into());
+                    return Err("Fraction size bigger than 1".into());
                 }
                 // TODO: bounds check
                 child.effective_layout = Some((
