@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
-use wgpu::{Adapter, Device, Instance, Queue, Surface};
+use wgpu::{Adapter, Color, Device, Instance, Queue, Surface};
 use winit::window::Window;
+
+use crate::renderer::{rectangle::RectangleRenderer, text::TextRenderer};
 pub(crate) mod reconfigure;
 pub(crate) mod rectangle;
 pub(crate) mod rendering;
 pub(crate) mod setup;
+pub(crate) mod text;
 
 #[allow(unused)]
 pub(crate) struct Renderer {
@@ -14,7 +17,8 @@ pub(crate) struct Renderer {
     adapter: Option<Adapter>,
     device: Option<Device>,
     queue: Option<Queue>,
-    pub(crate) clear_color: wgpu::Color,
+    pub(crate) clear_color: Color,
     pub(crate) window: Option<Arc<Window>>,
-    pub(crate) rectangle_renderer: Option<rectangle::RectangleRenderer>,
+    pub(crate) rectangle_renderer: Option<RectangleRenderer>,
+    pub(crate) text_renderer: Option<TextRenderer>,
 }

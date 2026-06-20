@@ -65,6 +65,9 @@ impl ApplicationHandler for App {
                         width: size.width,
                         height: size.height,
                     });
+                if let Some(renderer) = self.renderer.as_mut() {
+                    renderer.reconfigure(size.width, size.height);
+                }
             }
             WindowEvent::RedrawRequested => {
                 if let Some(base_component) = self.base_component.as_mut() {
@@ -89,18 +92,18 @@ impl ApplicationHandler for App {
                     });
                 render_events::update_mouse_position(position.x as u32, position.y as u32);
             }
-            WindowEvent::MouseInput { state, button, .. } => {
-                if state == ElementState::Pressed && button == MouseButton::Left {
-                    let pos = render_events::get_mouse_position();
-                    self.base_component
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Events::PrimaryClick {
-                            x: pos.0,
-                            y: pos.1,
-                            click_device: ClickDevice::Mouse,
-                        });
-                }
+            WindowEvent::MouseInput { state, button, .. }
+                if state == ElementState::Pressed && button == MouseButton::Left =>
+            {
+                let pos = render_events::get_mouse_position();
+                self.base_component
+                    .as_mut()
+                    .unwrap()
+                    .handle_event(Events::PrimaryClick {
+                        x: pos.0,
+                        y: pos.1,
+                        click_device: ClickDevice::Mouse,
+                    });
             }
             _ => {}
         }

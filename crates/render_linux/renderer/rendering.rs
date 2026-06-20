@@ -1,5 +1,6 @@
 use crate::renderer::Renderer;
-use render_components::primitives::Primitive;
+use render_components::primitives::{Primitive, Rectangle, Text};
+use std::any::Any;
 use wgpu::{CurrentSurfaceTexture, LoadOp, StoreOp};
 
 impl Renderer {
@@ -71,16 +72,34 @@ impl Renderer {
                 ..Default::default()
             });
 
-            // Render shapes if we have a rectangle renderer
-            if let Some(rectangle_renderer) = &self.rectangle_renderer {
-                let window = self.window.as_ref().unwrap();
-                let size = window.inner_size();
-                rectangle_renderer.render(
-                    &mut render_pass,
-                    shapes,
-                    (size.width, size.height),
-                    self.queue.as_ref().unwrap(),
-                );
+            // Render shapes
+            let window = self.window.as_ref().unwrap();
+            let size = window.inner_size();
+            let screen_size = (size.width, size.height);
+            let queue = self.queue.as_ref().unwrap();
+
+            // Reset per-frame cursors for buffer-backed renderers.
+            if let Some(tr) = &self.text_renderer {
+                tr.begin_frame();
+            }
+            if let Some(rr) = &self.rectangle_renderer {
+                rr.begin_frame();
+            }
+
+            // Step-by-step rendering: draw primitives in the order they
+            // appear so that z-order / layering is preserved.
+            for shape in shapes {
+                let primitive: &dyn Primitive = shape.as_ref();
+                let any: &dyn Any = primitive.as_any();
+                if let Some(rectangle) = any.downcast_ref::<Rectangle>() {
+                    if let Some(rr) = &self.rectangle_renderer {
+                        rr.render_one(rectangle, screen_size, queue, &mut render_pass);
+                    }
+                } else if let Some(text) = any.downcast_ref::<Text>()
+                    && let Some(tr) = &self.text_renderer
+                {
+                    tr.render_one(text, screen_size, queue, &mut render_pass);
+                }
             }
         }
         self.queue

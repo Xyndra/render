@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::renderer::{Renderer, rectangle::RectangleRenderer};
+use crate::renderer::{Renderer, rectangle::RectangleRenderer, text::TextRenderer};
 use render_platform_options::{RenderMode, WindowOptions};
 use wgpu::{Instance, InstanceDescriptor};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -53,12 +53,17 @@ impl Renderer {
             clear_color,
             window: Some(window),
             rectangle_renderer: None,
+            text_renderer: None,
         };
 
         // Initialize rectangle renderer
         let device = renderer.device.as_ref().unwrap();
         let rectangle_renderer = RectangleRenderer::new(device, texture_format);
         renderer.rectangle_renderer = Some(rectangle_renderer);
+
+        // Initialize text renderer
+        let device = renderer.device.as_ref().unwrap();
+        renderer.text_renderer = TextRenderer::new(device, texture_format);
 
         renderer.reconfigure(size.width, size.height);
         renderer

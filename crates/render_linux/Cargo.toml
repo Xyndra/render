@@ -16,3 +16,13 @@ render_layout = { path = "../render_layout" }
 render_components = { path = "../render_components" }
 render_platform_options = { path = "../render_platform_options" }
 render_events = { path = "../render_events" }
+# TODO: review if all of these are necessary
+ab_glyph = "0.2"
+fontdb = "0.16"
+rustybuzz = "0.20"
+unicode-segmentation = "1.10"
+unicode-script = "0.5"
+skrifa = "0.42"
+read-fonts = "0.39"
+swash = "0.2"
+unicode-bidi = "0.3.18"

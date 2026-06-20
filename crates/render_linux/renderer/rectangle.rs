@@ -1,21 +1,23 @@
 // WARNING: AI GENERATED; UNDER REVIEW
 
 use render_components::primitives::Rectangle;
-use render_layout::{InternalLayoutable, Primitive};
-use std::any::Any;
+use render_layout::InternalLayoutable;
+use std::cell::Cell;
 use wgpu::{include_wgsl, util::DeviceExt};
 
-/// Maximum number of rectangles that can be rendered in a single frame
-const MAX_RECTANGLES: usize = 1024;
-
-/// Rectangle renderer for wgpu
+/// Rectangle renderer for wgpu.
+///
+/// Renders one rectangle at a time so that draw order matches the
+/// primitive list produced by the layout engine.
 pub struct RectangleRenderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
-    /// Stride between uniform entries, aligned to min_uniform_buffer_offset_alignment
+    /// Next uniform slot to write into (reset each frame).
+    next_rect: Cell<u32>,
+    /// Aligned byte stride for one uniform entry.
     dynamic_alignment: u64,
 }
 
@@ -43,7 +45,7 @@ impl Vertex {
 
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            array_stride: size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBS,
         }
@@ -82,17 +84,14 @@ impl RectangleRenderer {
         let shader_source = include_wgsl!("shaders/rectangle.wgsl");
         let shader = device.create_shader_module(shader_source);
 
-        // AI WARNING from here to the bind group
-        // Calculate dynamic alignment for uniform buffer offsets
+        let uniform_size = size_of::<RectangleUniform>() as u64;
         let min_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
-        let uniform_size = std::mem::size_of::<RectangleUniform>() as u64;
         let dynamic_alignment = (uniform_size + min_alignment - 1) & !(min_alignment - 1);
 
-        // Create uniform buffer large enough for MAX_RECTANGLES with proper alignment
-        let buffer_size = dynamic_alignment * MAX_RECTANGLES as u64;
+        // Uniform buffer — 128 slots, each dynamically offset
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Rectangle Uniform Buffer"),
-            size: buffer_size,
+            size: dynamic_alignment * 128,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -195,77 +194,71 @@ impl RectangleRenderer {
             index_buffer,
             uniform_buffer,
             bind_group,
+            next_rect: Cell::new(0),
             dynamic_alignment,
         }
     }
 
-    /// Render rectangles
-    pub fn render<'a>(
+    /// Reset the per-frame uniform slot counter.  Call once at the
+    /// start of every frame, before any `render_one` calls.
+    pub fn begin_frame(&self) {
+        self.next_rect.set(0);
+    }
+
+    /// Render a single rectangle primitive.
+    ///
+    /// Sets the pipeline, uploads uniforms, and issues the draw call.
+    /// Safe to call interleaved with other renderers — each call is
+    /// self-contained.
+    pub fn render_one<'a>(
         &'a self,
-        render_pass: &mut wgpu::RenderPass<'a>,
-        shapes: &[Box<dyn Primitive>],
+        rect: &Rectangle,
         screen_size: (u32, u32),
         queue: &wgpu::Queue,
+        render_pass: &mut wgpu::RenderPass<'a>,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-        let mut rect_index: u32 = 0;
-        for shape in shapes {
-            // Downcast from dyn Primitive to concrete Rectangle via Any
-            let any: &dyn Any = shape.as_ref();
-            if let Some(rect) = any.downcast_ref::<Rectangle>() {
-                if rect_index >= MAX_RECTANGLES as u32 {
-                    eprintln!(
-                        "Warning: exceeded max renderable rectangles ({}), skipping remaining",
-                        MAX_RECTANGLES
-                    );
-                    break;
-                }
-                let width = rect.get_width() as f32;
-                let height = rect.get_height() as f32;
+        let width = rect.get_width() as f32;
+        let height = rect.get_height() as f32;
 
-                // Convert color from (u8, u8, u8, u8) to [f32; 4]
-                let color_f32 = [
-                    rect.color.0 as f32 / 255.0,
-                    rect.color.1 as f32 / 255.0,
-                    rect.color.2 as f32 / 255.0,
-                    rect.color.3 as f32 / 255.0,
-                ];
+        let color_f32 = [
+            rect.color.0 as f32 / 255.0,
+            rect.color.1 as f32 / 255.0,
+            rect.color.2 as f32 / 255.0,
+            rect.color.3 as f32 / 255.0,
+        ];
 
-                // Get rounding value
-                let mut rounding_f32: [f32; 4] =
-                    rect.rounding.unwrap_or((0.0, 0.0, 0.0, 0.0)).into();
-                rounding_f32 = rounding_f32.map(|a| a * (width.min(height) / 2.0)); // convert from percentage to pixels
+        let mut rounding_f32: [f32; 4] = rect.rounding.unwrap_or((0.0, 0.0, 0.0, 0.0)).into();
+        rounding_f32 = rounding_f32.map(|a| a * (width.min(height) / 2.0));
 
-                let position = [rect.get_x() as f32, rect.get_y() as f32];
+        let position = [rect.get_x() as f32, rect.get_y() as f32];
 
-                let uniforms = RectangleUniform {
-                    rect_position: position,
-                    rect_size: [width, height],
-                    screen_size: [screen_size.0 as f32, screen_size.1 as f32],
-                    filler: [0.0, 0.0], // Unused padding
-                    rounding: rounding_f32,
-                    color: color_f32,
-                };
+        let uniforms = RectangleUniform {
+            rect_position: position,
+            rect_size: [width, height],
+            screen_size: [screen_size.0 as f32, screen_size.1 as f32],
+            filler: [0.0, 0.0],
+            rounding: rounding_f32,
+            color: color_f32,
+        };
 
-                // Write this rectangle's uniforms to its aligned slot in the buffer
-                let offset = rect_index as u64 * self.dynamic_alignment;
-                queue.write_buffer(
-                    &self.uniform_buffer,
-                    offset,
-                    bytemuck::cast_slice(&[uniforms]),
-                );
-
-                // Set bind group with dynamic offset to point at this rectangle's data
-                render_pass.set_bind_group(0, &self.bind_group, &[offset as u32]);
-
-                // Draw the rectangle (quad with 6 indices)
-                render_pass.draw_indexed(0..6, 0, 0..1);
-
-                rect_index += 1;
-            }
+        let slot = self.next_rect.get();
+        if slot >= 128 {
+            return;
         }
+        let byte_offset = slot as u64 * self.dynamic_alignment;
+
+        queue.write_buffer(
+            &self.uniform_buffer,
+            byte_offset,
+            bytemuck::cast_slice(&[uniforms]),
+        );
+
+        render_pass.set_bind_group(0, &self.bind_group, &[byte_offset as u32]);
+        render_pass.draw_indexed(0..6, 0, 0..1);
+        self.next_rect.set(slot + 1);
     }
 }
