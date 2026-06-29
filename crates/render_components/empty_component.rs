@@ -10,7 +10,6 @@ pub struct EmptyComponent {
 impl Layoutable for EmptyComponent {
     fn children(&self) -> Vec<Layouted<dyn InternalLayoutable>> {
         let mut rect = Rectangle::new();
-        println!("Color: {:?}", self.color);
         rect.color = self.color;
         vec![Layouted::new(rect, LayoutType::AbsolutePxPxGrowGrow(0, 0))]
     }

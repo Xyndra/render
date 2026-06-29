@@ -71,7 +71,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 if let Some(base_component) = self.base_component.as_mut() {
                     let scale = self.window.as_ref().unwrap().scale_factor();
-                    let shapes = base_component.layout(scale);
+                    let shapes = base_component.internal_layout(scale);
                     self.renderer.as_mut().unwrap().render(&shapes.unwrap());
                 } else {
                     panic!("Base component is not set");

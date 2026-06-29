@@ -1,5 +1,5 @@
 use render::run_default;
-use render_components::empty_component::EmptyComponent;
+use render_components::EmptyComponent;
 use render_layout::Layoutable;
 
 fn main() {

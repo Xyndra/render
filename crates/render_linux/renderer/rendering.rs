@@ -1,6 +1,6 @@
 use crate::renderer::Renderer;
 use render_components::primitives::{Primitive, Rectangle, Text};
-use std::any::Any;
+use std::any::{Any, type_name};
 use wgpu::{CurrentSurfaceTexture, LoadOp, StoreOp};
 
 impl Renderer {
@@ -99,6 +99,8 @@ impl Renderer {
                     && let Some(tr) = &self.text_renderer
                 {
                     tr.render_one(text, screen_size, queue, &mut render_pass);
+                } else {
+                    eprintln!("Unknown primitive type: {}", type_name::<dyn Any>());
                 }
             }
         }

@@ -1,18 +1,31 @@
-#![forbid(unsafe_code)]
+#![forbid(unsafe_code, unused)]
 
 use render_events::Events;
 use std::{any::Any, error::Error};
 pub mod absolute;
+pub mod row;
 mod types;
 pub use types::*;
 mod general;
 pub use general::*;
+
+use crate::absolute::absolute_layout;
 
 type Area = (u32, u32, u32, u32);
 
 pub trait Layoutable {
     fn children(&self) -> Vec<Layouted<dyn InternalLayoutable>> {
         vec![]
+    }
+}
+
+pub trait LayoutFunction: InternalLayoutable {
+    fn layout_func(
+        &mut self,
+        area: (u32, u32, u32, u32),
+        scale: f64,
+    ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
+        general_layout(self, area, &absolute_layout, scale)
     }
 }
 
@@ -52,22 +65,23 @@ pub trait InternalLayoutable: Layoutable + Any {
 
     fn as_any(&self) -> &dyn Any;
 
-    fn layout(&mut self, scale: f64) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
+    fn internal_layout(&mut self, scale: f64) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
         let area = (
             self.get_x(),
             self.get_y(),
             self.get_width(),
             self.get_height(),
         );
-        general_layout(
-            self,
-            area,
-            &absolute::absolute_layout, // change this
-            scale,
-        )
+        self.layout(area, scale)
     }
 
-    fn into_primitive(&self) -> Option<Box<dyn Primitive>> {
+    fn layout(
+        &mut self,
+        area: (u32, u32, u32, u32),
+        scale: f64,
+    ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>>;
+
+    fn to_primitive(&self) -> Option<Box<dyn Primitive>> {
         None
     }
 }

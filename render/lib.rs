@@ -32,7 +32,7 @@ pub fn test(basecomponent: impl EventHandler + 'static, window_options: Option<W
         width: window_options.default_width,
         height: window_options.default_height,
     });
-    let shapes = base_component.layout(1.0);
+    let shapes = base_component.internal_layout(1.0);
     let exe_path = std::env::current_exe().expect("Failed to get exe path");
     let exe_name = exe_path
         .file_name()

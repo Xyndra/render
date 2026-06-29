@@ -44,6 +44,7 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Check if custom_default parameter is present
     let attr_str = attr.to_string();
     let has_custom_default = attr_str.contains("custom_default");
+    let has_custom_layout = attr_str.contains("custom_layout");
     let has_primitive = attr_str.contains("primitive");
 
     // Check if it's a struct
@@ -102,6 +103,14 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {}
     };
 
+    let layoutfunc_impl = if has_custom_layout {
+        quote! {}
+    } else {
+        quote! {
+            impl LayoutFunction for #struct_name {}
+        }
+    };
+
     // Combine the modified struct, Default impl, and trait implementation
     let output = quote! {
         #input
@@ -111,6 +120,8 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
         #trait_impl
 
         #primitive_impl
+
+        #layoutfunc_impl
     };
 
     output.into()
@@ -208,20 +219,16 @@ fn generate_layoutable_impl(
 ) -> proc_macro2::TokenStream {
     let field_assigns = fields
         .iter()
-        .filter(|f| {
-            f.ident
-                .as_ref()
-                .is_some_and(|i| i.to_string() != "children")
-        })
+        .filter(|f| f.ident.as_ref().is_some_and(|i| *i != "children"))
         .map(|field| {
             let field_name = &field.ident;
             quote! {
                 new_element.#field_name = self.#field_name.to_owned();
             }
         });
-    let into_primitive_method = if primitive {
+    let to_primitive_method = if primitive {
         quote! {
-            fn into_primitive(&self) -> Option<Box<dyn render_layout::Primitive>> {
+            fn to_primitive(&self) -> Option<Box<dyn render_layout::Primitive>> {
                 let mut new_element = #struct_name::default();
                 #(#field_assigns)*
                 Some(Box::new(new_element))
@@ -231,6 +238,7 @@ fn generate_layoutable_impl(
         quote! {}
     };
     let trait_impl = quote! {
+        use render_layout::LayoutFunction;
         impl render_layout::InternalLayoutable for #struct_name {
             fn get_width(&self) -> u32 {
                 self.width
@@ -286,7 +294,15 @@ fn generate_layoutable_impl(
                 self
             }
 
-            #into_primitive_method
+            fn layout(
+                &mut self,
+                area: (u32, u32, u32, u32),
+                scale: f64,
+            ) -> Result<Vec<Box<dyn render_layout::Primitive>>, Box<dyn std::error::Error>> {
+                self.layout_func(area, scale)
+            }
+
+            #to_primitive_method
         }
     };
 

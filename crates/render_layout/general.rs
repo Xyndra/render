@@ -71,12 +71,12 @@ pub fn general_layout<T: InternalLayoutable + ?Sized>(
             // Leaf node – likely a primitive.  Pass a reference to try_convert
             // via `as_any()` so the concrete type is available for
             // downcasting inside the callback.
-            if let Some(primitive) = child.element.into_primitive() {
+            if let Some(primitive) = child.element.to_primitive() {
                 primitives.push(primitive);
             }
         } else {
             // Container node – recurse into its children.
-            let child_primitives = child.element.layout(scale)?;
+            let child_primitives = child.element.internal_layout(scale)?;
             primitives.extend(child_primitives);
         }
     }

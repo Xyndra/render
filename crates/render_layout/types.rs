@@ -7,5 +7,9 @@ pub enum LayoutType {
     AbsolutePxPxGrowPx(u32, u32, u32),
     AbsolutePxPxGrowGrow(u32, u32),
     AbsoluteBg,
+    RowPx(u32),
+    RowD(f64),
+    RowFr(f32),
+    RowRemainder(u32),
     // Possibly add mixed variants using a macro
 }
