@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
 
-use render_components::primitives::primitve_from_any;
 use render_events::Events;
 use render_layout::EventHandler;
 use render_platform_options::WindowOptions;
@@ -33,8 +32,7 @@ pub fn test(basecomponent: impl EventHandler + 'static, window_options: Option<W
         width: window_options.default_width,
         height: window_options.default_height,
     });
-    let dpi = 96; // Standard DPI for testing
-    let shapes = base_component.layout(&|any| primitve_from_any(any), dpi);
+    let shapes = base_component.layout(1.0);
     let exe_path = std::env::current_exe().expect("Failed to get exe path");
     let exe_name = exe_path
         .file_name()

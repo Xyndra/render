@@ -1,6 +1,6 @@
 // WARNING: AI GENERATED; UNDER REVIEW
 
-use render_layout::{Layoutable, Primitive};
+use render_layout::Layoutable;
 use render_proc_macro::layoutable;
 
 /// Text primitive that renders text within a rectangle.
@@ -8,7 +8,7 @@ use render_proc_macro::layoutable;
 /// Text is automatically word-wrapped. If the text does not fit at thprimitivee
 /// requested `font_size`, the renderer will reduce the font size until
 /// the text fits within the assigned rectangle — overflows are never allowed.
-#[layoutable(custom_default)]
+#[layoutable(custom_default, primitive)]
 pub struct Text {
     pub text: String,
     pub color: (u8, u8, u8, u8),
@@ -16,8 +16,6 @@ pub struct Text {
     /// smaller so that the text fits inside the layout rectangle.
     pub font_size: f32,
 }
-
-impl Primitive for Text {}
 
 impl Layoutable for Text {}
 

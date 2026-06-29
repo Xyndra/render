@@ -1,15 +1,13 @@
-use render_layout::{Layoutable, Primitive};
+use render_layout::Layoutable;
 use render_proc_macro::layoutable;
 
 /// Only for simple rectangles for efficiency. For artistic use, use other primitives!
-#[layoutable(custom_default)]
+#[layoutable(custom_default, primitive)]
 pub struct Rectangle {
     pub color: (u8, u8, u8, u8),
-    /// Percentages for (left-top, right-top, left-bottom, right-bottom)
+    /// Percentages(between 0.0 and 1.0) for (left-top, right-top, left-bottom, right-bottom)
     pub rounding: Option<(f32, f32, f32, f32)>,
 }
-
-impl Primitive for Rectangle {}
 
 impl Layoutable for Rectangle {}
 

@@ -52,11 +52,7 @@ pub trait InternalLayoutable: Layoutable + Any {
 
     fn as_any(&self) -> &dyn Any;
 
-    fn layout(
-        &mut self,
-        try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
-        dpi: u32,
-    ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
+    fn layout(&mut self, scale: f64) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
         let area = (
             self.get_x(),
             self.get_y(),
@@ -66,10 +62,13 @@ pub trait InternalLayoutable: Layoutable + Any {
         general_layout(
             self,
             area,
-            try_convert,
             &absolute::absolute_layout, // change this
-            dpi,
+            scale,
         )
+    }
+
+    fn into_primitive(&self) -> Option<Box<dyn Primitive>> {
+        None
     }
 }
 

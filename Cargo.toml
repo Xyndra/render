@@ -15,6 +15,7 @@ render_layout = { path = "crates/render_layout" }
 
 [dev-dependencies]
 render_proc_macro = { path = "crates/render_proc_macro" }
+lazy_static = "1.5.0"
 
 [profile.release]
 lto = true

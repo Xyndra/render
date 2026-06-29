@@ -12,8 +12,9 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    Data, DeriveInput, FieldMutability, Fields, Ident, Type, Visibility, parse_macro_input,
-    token::Pub,
+    Data, DeriveInput, Field, FieldMutability, Fields, Ident, Type, Visibility, parse_macro_input,
+    punctuated::Punctuated,
+    token::{Comma, Pub},
 };
 
 /// Attribute macro that adds layout fields and implements Layoutable trait.
@@ -41,10 +42,9 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(item as DeriveInput);
 
     // Check if custom_default parameter is present
-    let has_custom_default = {
-        let attr_str = attr.to_string();
-        attr_str.contains("custom_default")
-    };
+    let attr_str = attr.to_string();
+    let has_custom_default = attr_str.contains("custom_default");
+    let has_primitive = attr_str.contains("primitive");
 
     // Check if it's a struct
     let struct_data = match &mut input.data {
@@ -92,7 +92,15 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate the Layoutable trait implementation
     let struct_name = &input.ident;
-    let trait_impl = generate_layoutable_impl(struct_name);
+    let trait_impl = generate_layoutable_impl(struct_name, fields, has_primitive);
+
+    let primitive_impl = if has_primitive {
+        quote! {
+            impl render_layout::Primitive for #struct_name {}
+        }
+    } else {
+        quote! {}
+    };
 
     // Combine the modified struct, Default impl, and trait implementation
     let output = quote! {
@@ -101,6 +109,8 @@ pub fn layoutable(attr: TokenStream, item: TokenStream) -> TokenStream {
         #default_impl
 
         #trait_impl
+
+        #primitive_impl
     };
 
     output.into()
@@ -191,7 +201,35 @@ fn generate_default_impl(
 }
 
 /// Generates the Layoutable trait implementation for the struct.
-fn generate_layoutable_impl(struct_name: &Ident) -> proc_macro2::TokenStream {
+fn generate_layoutable_impl(
+    struct_name: &Ident,
+    fields: &Punctuated<Field, Comma>,
+    primitive: bool,
+) -> proc_macro2::TokenStream {
+    let field_assigns = fields
+        .iter()
+        .filter(|f| {
+            f.ident
+                .as_ref()
+                .is_some_and(|i| i.to_string() != "children")
+        })
+        .map(|field| {
+            let field_name = &field.ident;
+            quote! {
+                new_element.#field_name = self.#field_name.to_owned();
+            }
+        });
+    let into_primitive_method = if primitive {
+        quote! {
+            fn into_primitive(&self) -> Option<Box<dyn render_layout::Primitive>> {
+                let mut new_element = #struct_name::default();
+                #(#field_assigns)*
+                Some(Box::new(new_element))
+            }
+        }
+    } else {
+        quote! {}
+    };
     let trait_impl = quote! {
         impl render_layout::InternalLayoutable for #struct_name {
             fn get_width(&self) -> u32 {
@@ -247,6 +285,8 @@ fn generate_layoutable_impl(struct_name: &Ident) -> proc_macro2::TokenStream {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }
+
+            #into_primitive_method
         }
     };
 

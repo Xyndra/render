@@ -1,4 +1,4 @@
-use std::{any::Any, error::Error, ops::Deref, slice::IterMut};
+use std::{error::Error, ops::Deref, slice::IterMut};
 
 use render_events::Events;
 
@@ -49,9 +49,8 @@ pub type ChildIterator<'a> = IterMut<'a, Layouted<dyn InternalLayoutable + 'stat
 pub fn general_layout<T: InternalLayoutable + ?Sized>(
     base_component: &mut T,
     area: Area,
-    try_convert: &dyn Fn(&dyn Any) -> ConvertedPrimitive,
     specific_layout: &dyn Fn(Area, ChildIterator<'_>) -> Result<(), Box<dyn Error>>,
-    dpi: u32,
+    scale: f64,
 ) -> Result<Vec<Box<dyn Primitive>>, Box<dyn Error>> {
     // TODO: add some protections against stack overflow since this is recursive
     let mut primitives: Vec<Box<dyn Primitive>> = Vec::new();
@@ -72,12 +71,12 @@ pub fn general_layout<T: InternalLayoutable + ?Sized>(
             // Leaf node – likely a primitive.  Pass a reference to try_convert
             // via `as_any()` so the concrete type is available for
             // downcasting inside the callback.
-            if let Some(primitive) = try_convert(child.element.as_any()) {
+            if let Some(primitive) = child.element.into_primitive() {
                 primitives.push(primitive);
             }
         } else {
             // Container node – recurse into its children.
-            let child_primitives = child.element.layout(try_convert, dpi)?;
+            let child_primitives = child.element.layout(scale)?;
             primitives.extend(child_primitives);
         }
     }

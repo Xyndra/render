@@ -8,7 +8,7 @@ pub(crate) const TEXT_DEBUG: bool = false;
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {
-        if crate::renderer::text::debug::TEXT_DEBUG {
+        if $crate::renderer::text::debug::TEXT_DEBUG {
             eprintln!($($arg)*);
         }
     };

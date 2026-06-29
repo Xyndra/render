@@ -1,6 +1,9 @@
 use render::run_default;
 use render_layout::Layoutable;
 pub mod app;
+pub mod logic;
+pub mod state;
+pub mod topbar;
 use app::App;
 
 fn main() {

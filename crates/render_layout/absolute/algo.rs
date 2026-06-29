@@ -22,6 +22,21 @@ pub fn absolute_layout(area: Area, children: ChildIterator) -> Result<(), Box<dy
                     (height as f32 * (ey2 - ey1)) as u32,
                 ))
             }
+            LayoutType::AbsolutePxPxGrowPx(ex, ey, h) => {
+                bounds_check(width, height, ex, ey)?;
+                bounds_check(width, height, ex, h)?;
+                child.effective_layout = Some((x + ex, y + ey, width - ex, y + h));
+            }
+            LayoutType::AbsolutePxPxPxGrow(ex, ey, w) => {
+                bounds_check(width, height, ex, ey)?;
+                bounds_check(width, height, w, ey)?;
+                child.effective_layout = Some((x + ex, y + ey, x + w, height - ey));
+            }
+            LayoutType::AbsolutePxPxPxPx(ex, ey, w, h) => {
+                bounds_check(width, height, ex, ey)?;
+                bounds_check(width, height, w, h)?;
+                child.effective_layout = Some((x + ex, y + ey, x + w, y + h));
+            }
             _ => {
                 return Err(format!(
                     "Unsupported layout type {:?} for absolute layout",
