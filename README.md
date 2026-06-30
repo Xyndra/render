@@ -10,20 +10,20 @@ But why do people still do it? Two reasons:
     - Every platform has its quirks
     - Having a nice-looking UI is very difficult
 
-Here is the plan:
+Here is my plan:
 
-1. Just have native get good performance on web
+1. Just have Rust get good performance on web
 2. Build out a way to create good-looking UIs on native
 
 _Of course, there is also the issue of language difficulty, there is the issue of Rust, but that's just a skill issue_
 
 Goals of the project:
 - Dynamic, nice to use, Component-based UI system
-- Use HTML and CSS(!) for the web, but using some quirks to have it work the same way as native
+- Use HTML and CSS(not canvas rendering!) for the web **internally**, but using some tricks to have it work the same way as native
     - Manual layouting using absolute positioning or possibly CSS depending on what is wanted
         - Whilst manual layouting is easier, it has to be calculated per-resize and per-change, which might become a problem 
     - Shaders using a custom system for the web to directly interface with webgpu or webgl
-    - Possibility of generating manual JavaScript for the web
+    - Possibility of generating manual JavaScript for the web to avoid WASM bridge
 - For native, generate shapes and then use a harfbuzz binding and a high-performance SVG rendering engine
 
 If this project succeeds, I will also create a standard library for things like save storage, networking, navigation, and other things that JS has an easy version for to simplify the development further.
