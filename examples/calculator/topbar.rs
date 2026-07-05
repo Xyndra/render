@@ -25,7 +25,7 @@ impl Layoutable for TopBar {
         row_elements.push(Layouted::new(eq_text, RowRemainder(2)));
         let mut eq_sign = Text::new();
         eq_sign.text = "=".into();
-        row_elements.push(Layouted::new(eq_sign, LayoutType::RowPx(30)));
+        row_elements.push(Layouted::new(eq_sign, LayoutType::RowPx(40)));
         let mut res_text = Text::new();
         res_text.text = "ABC".into();
         row_elements.push(Layouted::new(res_text, RowRemainder(1)));

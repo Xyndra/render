@@ -230,7 +230,8 @@ impl TextRenderer {
 
     // ── Font discovery ─────────────────────────────────────────────
 
-    fn load_system_fonts() -> Option<(Vec<FontArc>, Vec<Vec<u8>>, Vec<u32>, FontGroupRanges)> {
+    pub(crate) fn load_system_fonts()
+    -> Option<(Vec<FontArc>, Vec<Vec<u8>>, Vec<u32>, FontGroupRanges)> {
         let mut db = fontdb::Database::new();
         db.load_system_fonts();
 

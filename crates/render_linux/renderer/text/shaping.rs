@@ -426,7 +426,60 @@ fn flush_line(lines: &mut Vec<LayoutLine>, glyphs: &mut Vec<LayoutGlyph>, width:
     *width = 0.0;
 }
 
+/// Compute the total rendered height of `lines` at the given `size`.
+///
+/// The first line contributes `ascent + descent`; each subsequent line adds
+/// `size * LINE_HEIGHT_RATIO`.
+fn total_height(fonts: &[FontArc], size: f32, lines: &[LayoutLine]) -> f32 {
+    let scaled = fonts[0].as_scaled(PxScale::from(size));
+    let ascent = scaled.ascent();
+    let descent = scaled.descent();
+    let line_h = size * LINE_HEIGHT_RATIO;
+    let n = lines.len() as f32;
+    ascent - descent + (n - 1.0).max(0.0) * line_h
+}
+
+/// Compute the width of the widest line, using the same advance-based metric
+/// that [`shape_and_wrap`] uses for wrapping decisions.  A line whose width
+/// exceeds `max_width` means a single glyph (or unbreakable token) is too wide
+/// for the column — the font size must shrink further.
+fn max_line_width(fonts: &[FontArc], size: f32, lines: &[LayoutLine]) -> f32 {
+    let mut max_w = 0.0f32;
+    for line in lines {
+        if line.glyphs.is_empty() {
+            continue;
+        }
+        let last = line.glyphs.last().unwrap();
+        let scaled = fonts[last.font_index as usize].as_scaled(PxScale::from(size));
+        let advance = scaled.h_advance(GlyphId(last.glyph_id as u16));
+        max_w = max_w.max(last.x + advance);
+    }
+    max_w
+}
+
+/// Does the laid-out text at `size` fit within `max_width × max_height`?
+fn fits(
+    fonts: &[FontArc],
+    size: f32,
+    lines: &[LayoutLine],
+    max_width: f32,
+    max_height: f32,
+) -> bool {
+    total_height(fonts, size, lines) <= max_height
+        && max_line_width(fonts, size, lines) <= max_width
+}
+
 /// Compute the text layout that fits into `max_width × max_height`.
+///
+/// When `requested_size` is `0` (auto-fit mode) the renderer searches up to
+/// `max_height` for the *largest* font size whose wrapped text fits inside the
+/// rectangle.  A non-zero `requested_size` caps the search at that value — the
+/// text is never rendered larger than requested.
+///
+/// Both paths check width *and* height: a single glyph wider than the column
+/// (e.g. `=` in a narrow box) forces a smaller size, and excessive wrapping
+/// from too-wide words can no longer push the bottom edge past the box.
+///
 /// Returns `(actual_font_size, lines)`.
 pub(super) fn fit_text(
     text: &str,
@@ -442,27 +495,279 @@ pub(super) fn fit_text(
         return (requested_size, vec![LayoutLine { glyphs: vec![] }]);
     }
 
-    let mut size = requested_size;
-    loop {
+    // Upper bound: auto-fit (requested_size <= 0) searches up to max_height;
+    // an explicit size caps the search at the requested value.
+    let upper = if requested_size <= 0.0 {
+        max_height.max(MIN_FONT_SIZE)
+    } else {
+        requested_size.max(MIN_FONT_SIZE)
+    };
+
+    fit_text_search(
+        text,
+        fonts,
+        font_data,
+        face_indices,
+        max_width,
+        max_height,
+        font_groups,
+        upper,
+    )
+}
+
+/// Binary-search for the largest font size whose wrapped text fits inside
+/// `max_width × max_height`, bounded above by `upper`.
+///
+/// The search uses 0.1 px resolution and checks both dimensions via [`fits`],
+/// so a single glyph wider than the column forces a smaller size just as an
+/// over-tall multi-line layout does.
+fn fit_text_search(
+    text: &str,
+    fonts: &[FontArc],
+    font_data: &[Vec<u8>],
+    face_indices: &[u32],
+    max_width: f32,
+    max_height: f32,
+    font_groups: &FontGroupRanges,
+    upper: f32,
+) -> (f32, Vec<LayoutLine>) {
+    let min = MIN_FONT_SIZE;
+    let max = upper.max(min);
+
+    // Establish the lower bound — if even the minimum doesn't fit, return it
+    // (the text overflows at the smallest supported size).
+    let mut best_size = min;
+    let mut best_lines = shape_and_wrap(
+        text,
+        fonts,
+        font_data,
+        face_indices,
+        min,
+        max_width,
+        font_groups,
+    );
+    if !fits(fonts, min, &best_lines, max_width, max_height) {
+        return (min, best_lines);
+    }
+
+    // Binary search for the largest fitting size (0.1 px resolution).
+    let mut lo = min;
+    let mut hi = max;
+    while hi - lo > 0.1 {
+        let mid = (lo + hi) * 0.5;
         let lines = shape_and_wrap(
             text,
             fonts,
             font_data,
             face_indices,
-            size,
+            mid,
             max_width,
             font_groups,
         );
+        if fits(fonts, mid, &lines, max_width, max_height) {
+            best_size = mid;
+            best_lines = lines;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    (best_size, best_lines)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ab_glyph::Font;
+
+    fn load_test_fonts() -> Option<(Vec<FontArc>, Vec<Vec<u8>>, Vec<u32>, FontGroupRanges)> {
+        super::super::TextRenderer::load_system_fonts()
+    }
+
+    /// Actual bottom of rendered text (from text origin y=0), computed from
+    /// glyph outline bounds — this is what the renderer actually draws.
+    fn actual_bottom(fonts: &[FontArc], size: f32, lines: &[LayoutLine]) -> f32 {
         let scaled = fonts[0].as_scaled(PxScale::from(size));
         let ascent = scaled.ascent();
-        let descent = scaled.descent();
         let line_h = size * LINE_HEIGHT_RATIO;
-        let n = lines.len() as f32;
-        let total_h = ascent + descent + (n - 1.0).max(0.0) * line_h;
-
-        if total_h <= max_height || size <= MIN_FONT_SIZE {
-            return (size.max(MIN_FONT_SIZE), lines);
+        let mut max_bottom = 0.0f32;
+        for (li, line) in lines.iter().enumerate() {
+            let baseline_y = ascent + li as f32 * line_h;
+            for g in &line.glyphs {
+                let font = &fonts[g.font_index as usize];
+                let glyph = GlyphId(g.glyph_id as u16).with_scale(PxScale::from(size));
+                if let Some(outlined) = font.outline_glyph(glyph) {
+                    let bounds = outlined.px_bounds();
+                    max_bottom = max_bottom.max(baseline_y + g.y_offset + bounds.max.y);
+                }
+            }
         }
-        size = (size * 0.9).max(MIN_FONT_SIZE);
+        max_bottom
+    }
+
+    /// Actual right edge of rendered text (from text origin x=0), computed
+    /// from glyph outline bounds.
+    fn actual_right(fonts: &[FontArc], size: f32, lines: &[LayoutLine]) -> f32 {
+        let mut max_right = 0.0f32;
+        for line in lines {
+            for g in &line.glyphs {
+                let font = &fonts[g.font_index as usize];
+                let glyph = GlyphId(g.glyph_id as u16).with_scale(PxScale::from(size));
+                if let Some(outlined) = font.outline_glyph(glyph) {
+                    let bounds = outlined.px_bounds();
+                    max_right = max_right.max(g.x + g.x_offset + bounds.max.x);
+                }
+            }
+        }
+        max_right
+    }
+
+    #[test]
+    fn total_height_vs_actual_glyph_bounds() {
+        let Some((fonts, fd, fi, groups)) = load_test_fonts() else {
+            eprintln!("No system fonts, skipping");
+            return;
+        };
+        for (text, size, max_w) in [
+            ("Hello", 20.0_f32, 1000.0_f32),
+            ("pyggy", 20.0, 1000.0),
+            ("The quick brown fox jumps over the lazy dog", 20.0, 100.0),
+            ("The quick brown fox jumps over the lazy dog", 40.0, 200.0),
+        ] {
+            let lines = shape_and_wrap(text, &fonts, &fd, &fi, size, max_w, &groups);
+            let th = total_height(&fonts, size, &lines);
+            let ab = actual_bottom(&fonts, size, &lines);
+            eprintln!(
+                "text='{}' size={} lines={} total_h={:.2} actual={:.2} diff={:.2}",
+                text,
+                size,
+                lines.len(),
+                th,
+                ab,
+                ab - th
+            );
+            assert!(
+                ab <= th + 0.5,
+                "actual_bottom={:.2} > total_height={:.2} (diff={:.2})",
+                ab,
+                th,
+                ab - th
+            );
+        }
+    }
+
+    #[test]
+    fn fit_text_auto_fits_box() {
+        let Some((fonts, fd, fi, groups)) = load_test_fonts() else {
+            eprintln!("No system fonts, skipping");
+            return;
+        };
+        let text = "The quick brown fox jumps over the lazy dog";
+        for (mw, mh) in [
+            (100.0_f32, 50.0_f32),
+            (200.0, 100.0),
+            (50.0, 200.0),
+            (300.0, 30.0),
+        ] {
+            let (size, lines) = fit_text(text, &fonts, &fd, &fi, 0.0, mw, mh, &groups);
+            let th = total_height(&fonts, size, &lines);
+            let mlw = max_line_width(&fonts, size, &lines);
+            let ab = actual_bottom(&fonts, size, &lines);
+            let ar = actual_right(&fonts, size, &lines);
+            eprintln!(
+                "box={}x{}: size={:.1} lines={} th={:.2} mlw={:.2} actual_h={:.2} actual_w={:.2}",
+                mw,
+                mh,
+                size,
+                lines.len(),
+                th,
+                mlw,
+                ab,
+                ar
+            );
+            assert!(th <= mh + 0.01, "total_h={:.2} > max_h={:.2}", th, mh);
+            assert!(mlw <= mw + 0.01, "max_line_w={:.2} > max_w={:.2}", mlw, mw);
+            assert!(
+                ab <= mh + 0.5,
+                "actual_bottom={:.2} > max_h={:.2} (diff={:.2})",
+                ab,
+                mh,
+                ab - mh
+            );
+            assert!(
+                ar <= mw + 0.5,
+                "actual_right={:.2} > max_w={:.2} (diff={:.2})",
+                ar,
+                mw,
+                ar - mw
+            );
+        }
+    }
+
+    #[test]
+    fn fit_text_narrow_column_equals() {
+        let Some((fonts, fd, fi, groups)) = load_test_fonts() else {
+            eprintln!("No system fonts, skipping");
+            return;
+        };
+        let (size, lines) = fit_text("=", &fonts, &fd, &fi, 0.0, 30.0, 500.0, &groups);
+        let mlw = max_line_width(&fonts, size, &lines);
+        let ar = actual_right(&fonts, size, &lines);
+        eprintln!(
+            "= in 30px: size={:.1} mlw={:.2} actual_right={:.2}",
+            size, mlw, ar
+        );
+        assert!(mlw <= 30.0 + 0.01, "max_line_w={:.2} > 30", mlw);
+        assert!(ar <= 30.0 + 0.5, "actual_right={:.2} > 30", ar);
+    }
+
+    #[test]
+    fn fit_text_explicit_size_fits() {
+        let Some((fonts, fd, fi, groups)) = load_test_fonts() else {
+            eprintln!("No system fonts, skipping");
+            return;
+        };
+        let text = "The quick brown fox jumps over the lazy dog";
+        let (size, lines) = fit_text(text, &fonts, &fd, &fi, 48.0, 200.0, 50.0, &groups);
+        let th = total_height(&fonts, size, &lines);
+        let ab = actual_bottom(&fonts, size, &lines);
+        eprintln!(
+            "explicit 48: size={:.1} lines={} th={:.2} actual_h={:.2}",
+            size,
+            lines.len(),
+            th,
+            ab
+        );
+        assert!(size <= 48.0 + 0.01, "size={:.2} > 48", size);
+        assert!(th <= 50.0 + 0.01, "total_h={:.2} > 50", th);
+        assert!(ab <= 50.0 + 0.5, "actual_bottom={:.2} > 50", ab);
+    }
+
+    #[test]
+    fn grapheme_clustering_zwj_emoji() {
+        let tokens = tokenize_by_graphemes("👨‍👩‍👧‍👦");
+        assert_eq!(
+            tokens.len(),
+            1,
+            "expected 1 token, got {}: {:?}",
+            tokens.len(),
+            tokens
+        );
+    }
+
+    #[test]
+    fn grapheme_clustering_word_and_space() {
+        let tokens = tokenize_by_graphemes("Hello World");
+        assert_eq!(
+            tokens.len(),
+            3,
+            "expected [Hello, ' ', World], got {}: {:?}",
+            tokens.len(),
+            tokens
+        );
+        assert_eq!(tokens[0], "Hello");
+        assert_eq!(tokens[1], " ");
+        assert_eq!(tokens[2], "World");
     }
 }

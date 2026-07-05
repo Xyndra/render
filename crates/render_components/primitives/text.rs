@@ -5,15 +5,19 @@ use render_proc_macro::layoutable;
 
 /// Text primitive that renders text within a rectangle.
 ///
-/// Text is automatically word-wrapped. If the text does not fit at thprimitivee
-/// requested `font_size`, the renderer will reduce the font size until
-/// the text fits within the assigned rectangle — overflows are never allowed.
+/// Text is automatically word-wrapped. A `font_size` of `0` (the default)
+/// enables auto-fit: the renderer picks the largest font size whose wrapped
+/// text still fits inside the assigned rectangle. A non-zero `font_size`
+/// requests a specific size; if the text does not fit at that size the
+/// renderer shrinks it until it fits — overflows are never allowed.
 #[layoutable(custom_default, primitive)]
 pub struct Text {
     pub text: String,
     pub color: (u8, u8, u8, u8),
-    /// Requested font size in pixels. The actual rendered size may be
-    /// smaller so that the text fits inside the layout rectangle.
+    /// Requested font size in pixels. A value of `0` (the default) enables
+    /// auto-fit: the renderer selects the largest font size that fits inside
+    /// the layout rectangle. A non-zero value requests a specific size; the
+    /// renderer may shrink it to make the text fit.
     pub font_size: f32,
 }
 
@@ -29,7 +33,7 @@ impl Default for Text {
             children: vec![],
             text: String::new(),
             color: (0, 0, 0, 255),
-            font_size: 16.0,
+            font_size: 0.0,
         }
     }
 }
