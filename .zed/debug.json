@@ -1,8 +1,14 @@
 [
-  {
-    "adapter": "CodeLLDB",
-    "label": "Debug empty_window",
-    "request": "launch",
-    "program": "target/debug/examples/empty_window",
-  },
+    {
+        "adapter": "CodeLLDB",
+        "label": "Debug empty_window",
+        "request": "launch",
+        "program": "target/debug/examples/empty_window",
+    },
+    {
+        "adapter": "CodeLLDB",
+        "label": "Debug calculator",
+        "request": "launch",
+        "program": "target/debug/examples/calculator",
+    },
 ]

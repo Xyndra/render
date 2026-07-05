@@ -11,7 +11,7 @@ impl Layoutable for App {
         let mut rect = Rectangle::new();
         rect.color = (255, 0, 255, 255);
         rect.rounding = (0.2, 0.5, 1.0, 0.0).into();
-        let layouted_rect = Layouted::new(rect, LayoutType::AbsoluteFrFrFrFr(0.1, 0.1, 0.9, 0.9));
+        let layouted_rect = Layouted::new(rect, LayoutType::AbsoluteFrFrFrFr(0.1, 0.1, 0.8, 0.8));
         vec![layouted_rect]
     }
 }

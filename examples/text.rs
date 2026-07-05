@@ -98,7 +98,7 @@ fn bg_rect(
 ) -> Layouted<dyn InternalLayoutable> {
     let mut rect = Rectangle::new();
     rect.color = color;
-    Layouted::new(rect, LayoutType::AbsoluteFrFrFrFr(x1, y1, x2, y2))
+    Layouted::new(rect, LayoutType::AbsoluteFrFrFrFr(x1, y1, x2 - x1, y2 - y1))
 }
 
 fn make_text(
@@ -114,7 +114,7 @@ fn make_text(
     text.text = content.to_string();
     text.font_size = font_size;
     text.color = color;
-    Layouted::new(text, LayoutType::AbsoluteFrFrFrFr(x1, y1, x2, y2))
+    Layouted::new(text, LayoutType::AbsoluteFrFrFrFr(x1, y1, x2 - x1, y2 - y1))
 }
 
 fn main() {

@@ -11,15 +11,15 @@ pub fn absolute_layout(area: Area, children: ChildIterator) -> Result<(), Box<dy
             }
             LayoutType::AbsoluteBg => child.effective_layout = Some((x, y, width, height)),
             LayoutType::AbsoluteFrFrFrFr(ex1, ey1, ex2, ey2) => {
-                if ex1 >= 1.0 || ey1 >= 1.0 || ex2 > 1.0 || ey2 > 1.0 {
-                    return Err("Fraction size bigger than 1".into());
+                if ex1 >= 1.0 || ey1 >= 1.0 || ex2 >= 1.0 - ex1 || ey2 >= 1.0 - ey1 {
+                    return Err("Fraction size too large".into());
                 }
                 // TODO: bounds check
                 child.effective_layout = Some((
                     x + (width as f32 * ex1) as u32,
                     y + (height as f32 * ey1) as u32,
-                    (width as f32 * (ex2 - ex1)) as u32,
-                    (height as f32 * (ey2 - ey1)) as u32,
+                    (width as f32 * ex2) as u32,
+                    (height as f32 * ey2) as u32,
                 ))
             }
             LayoutType::AbsolutePxPxGrowPx(ex, ey, h) => {

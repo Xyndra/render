@@ -29,11 +29,11 @@ fn detect_script_and_dir(text: &str) -> (harfrust::Script, Direction) {
 // ── Font group tracking ────────────────────────────────────────
 
 /// Ranges of font indices for each priority group.
-pub(super) struct FontGroupRanges {
-    pub(super) latin: Range<usize>,
-    pub(super) cjk: Range<usize>,
-    pub(super) arabic: Range<usize>,
-    pub(super) emoji: Range<usize>,
+pub(crate) struct FontGroupRanges {
+    pub(crate) latin: Range<usize>,
+    pub(crate) cjk: Range<usize>,
+    pub(crate) arabic: Range<usize>,
+    pub(crate) emoji: Range<usize>,
 }
 
 // ── Font helpers ───────────────────────────────────────────────
