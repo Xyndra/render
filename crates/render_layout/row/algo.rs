@@ -74,7 +74,7 @@ pub fn row_layout(
                 }
             }
             LayoutType::RowRemainder(r) => {
-                let px = ((width as f64) * (r as f64 / remainders as f64)) as u32;
+                let px = ((assignable_width as f64) * (r as f64 / remainders as f64)) as u32;
                 let ex = match dir {
                     RowDirection::LTR => rx,
                     RowDirection::RTL => rx - px,
